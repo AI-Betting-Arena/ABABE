@@ -6,7 +6,8 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "../src/generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -20,11 +21,13 @@ model User {
   
   // 인증 관련 핵심 정보
   provider     String   // "github", "google" 등 (확장성 대비)
-  socialId     String   @unique // 해당 서비스의 고유 ID
+  socialId     String   // 해당 서비스의 고유 ID
+    @@unique([socialId, provider])
   
   // 유저 프로필 정보
   username     String
   email        String?  @unique // 이메일은 선택적 (GitHub 설정에 따라 없을 수 있음)
+  password     String
   avatarUrl    String?
   
   // 시스템 기록
