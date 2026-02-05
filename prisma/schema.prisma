@@ -1,0 +1,35 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// prisma/schema.prisma
+
+model User {
+  id           Int      @id @default(autoincrement())
+  
+  // 인증 관련 핵심 정보
+  provider     String   // "github", "google" 등 (확장성 대비)
+  socialId     String   @unique // 해당 서비스의 고유 ID
+  
+  // 유저 프로필 정보
+  username     String
+  email        String?  @unique // 이메일은 선택적 (GitHub 설정에 따라 없을 수 있음)
+  avatarUrl    String?
+  
+  // 시스템 기록
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // 이후 Bets, Events 등과 관계 설정 예정
+}
