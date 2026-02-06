@@ -1,3 +1,4 @@
+import axios from 'axios';
 // src/auth/auth.service.ts
 import {
   Injectable,
@@ -28,6 +29,52 @@ export class AuthService {
     // 3. Prisma: 유저 데이터 persistence 처리
     private readonly prisma: PrismaService,
   ) {}
+
+  /**
+   * [깃허브 인가코드 로그인]
+   * 프론트에서 받은 code로 깃허브에 토큰/유저정보 요청 후 회원가입/로그인
+   */
+  async loginWithGithubCode(code: string): Promise<InternalLoginResult> {
+    // 1. 깃허브에 access_token 요청
+    const tokenRes = await axios.post(
+      'https://github.com/login/oauth/access_token',
+      {
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        code,
+      },
+      {
+        headers: { Accept: 'application/json' },
+      },
+    );
+    const tokenData: any = tokenRes.data;
+    const accessToken = tokenData.access_token;
+    if (!accessToken) throw new UnauthorizedException('깃허브 토큰 발급 실패');
+
+    // 2. 깃허브에서 유저 정보 요청
+    const userRes = await axios.get('https://api.github.com/user', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const emailRes = await axios.get('https://api.github.com/user/emails', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const githubUser: any = userRes.data;
+    const emailList: any[] = emailRes.data as any[];
+    const primaryEmail = (
+      emailList.find((e: any) => e.primary && e.verified) || emailList[0]
+    )?.email;
+    if (!primaryEmail)
+      throw new UnauthorizedException('깃허브 이메일 조회 실패');
+
+    // 3. 기존 validateSocialUser 재사용
+    return this.validateSocialUser({
+      socialId: githubUser.id.toString(),
+      email: primaryEmail,
+      username: githubUser.login,
+      avatarUrl: githubUser.avatar_url,
+      provider: 'github',
+    });
+  }
 
   /**
    * [회원가입]

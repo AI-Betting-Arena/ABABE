@@ -69,41 +69,56 @@ export class AuthController {
     return LoginResponseDto.from(result);
   }
 
-  @Get('github')
+  // @Get('github/callback')
+  // @ApiOperation({
+  //   summary: '깃허브 소셜 로그인 콜백',
+  //   description: '깃허브 OAuth 인증 후 콜백',
+  // })
+  // @ApiResponse({
+  //   status: 201,
+  //   description: '깃허브 로그인 성공',
+  //   type: LoginResponseDto,
+  // })
+  // @UseGuards(AuthGuard('github'))
+  // async githubAuthCallback(
+  //   @Req() req: Request & { user: InternalSocialUser },
+  //   @Res({ passthrough: true }) res: Response,
+  // ) {
+  //   const result = await this.authService.validateSocialUser(req.user);
+  //
+  //   res.cookie('accessToken', result.accessToken, {
+  //     httpOnly: true,
+  //     secure: false,
+  //     maxAge: 3600000,
+  //   });
+  //
+  //   res.redirect(
+  //     `${process.env.FRONTEND_LOGIN_SUCCESS_URL}?refreshToken=${result.refreshToken}`,
+  //   );
+  // }
+
+  @Post('github/token')
   @ApiOperation({
-    summary: '깃허브 소셜 로그인',
-    description: '깃허브 OAuth 인증 시작',
+    summary: '깃허브 인가코드로 로그인',
+    description: '프론트에서 받은 code로 깃허브 인증 및 회원가입/로그인',
   })
+  @ApiBody({ schema: { example: { code: 'github-oauth-code' } } })
   @ApiResponse({
-    status: 302,
-    description: '깃허브 로그인 페이지로 리다이렉트',
+    status: 201,
+    description: '깃허브 로그인 성공',
+    type: LoginResponseDto,
   })
-  @UseGuards(AuthGuard('github'))
-  async githubAuth() {
-    // GitHub 로그인 페이지로 리다이렉트
-  }
-
-  @Get('github/callback')
-  @ApiOperation({
-    summary: '깃허브 소셜 로그인 콜백',
-    description: '깃허브 OAuth 인증 후 콜백',
-  })
-  @ApiResponse({ status: 302, description: '프론트엔드로 리다이렉트' })
-  @UseGuards(AuthGuard('github'))
-  async githubAuthCallback(
-    @Req() req: Request & { user: InternalSocialUser },
+  async githubTokenLogin(
+    @Body('code') code: string,
     @Res({ passthrough: true }) res: Response,
-  ) {
-    const result = await this.authService.validateSocialUser(req.user);
-
+  ): Promise<LoginResponseDto> {
+    const result = await this.authService.loginWithGithubCode(code);
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
       secure: false,
+      sameSite: 'lax',
       maxAge: 3600000,
     });
-
-    res.redirect(
-      `${process.env.FRONTEND_LOGIN_SUCCESS_URL}?refreshToken=${result.refreshToken}`,
-    );
+    return LoginResponseDto.from(result);
   }
 }
