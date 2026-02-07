@@ -20,7 +20,7 @@ const config: runtime.GetPrismaClientConfig = {
   "clientVersion": "7.3.0",
   "engineVersion": "9d6ad21cbbceab97458517b147a6a09ff43aa735",
   "activeProvider": "postgresql",
-  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider     = \"prisma-client\"\n  output       = \"../src/generated/prisma\"\n  moduleFormat = \"cjs\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\n// prisma/schema.prisma\n\nmodel User {\n  id Int @id @default(autoincrement())\n\n  // 인증 관련 핵심 정보\n  provider String // \"github\", \"google\" 등 (확장성 대비)\n  socialId String // 해당 서비스의 고유 ID\n\n  // 유저 프로필 정보\n  username  String\n  email     String? @unique // 이메일은 선택적 (GitHub 설정에 따라 없을 수 있음)\n  password  String\n  avatarUrl String?\n\n  // 시스템 기록\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  // 이후 Bets, Events 등과 관계 설정 예정\n\n  @@unique([socialId, provider])\n}\n",
+  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider     = \"prisma-client\"\n  output       = \"../src/generated/prisma\"\n  moduleFormat = \"cjs\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\n// 1. User & Auth: 시스템의 주체\nmodel User {\n  id        Int      @id @default(autoincrement())\n  provider  String // \"github\", \"google\" 등\n  socialId  String // 소셜 고유 ID\n  username  String\n  email     String?  @unique\n  password  String   @default(\"\")\n  avatarUrl String?\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@unique([socialId, provider])\n  @@map(\"users\")\n}\n\n// 2. League: 대회 그 자체 (최상위 부모)\nmodel League {\n  id       Int     @id @default(autoincrement())\n  apiId    Int     @unique @map(\"api_id\")\n  name     String  @db.VarChar(100)\n  code     String  @unique @db.VarChar(10) // 예: PL\n  type     String? @db.VarChar(20)\n  emblem   String? @db.Text\n  areaName String? @map(\"area_name\")\n  areaCode String? @map(\"area_code\")\n  areaFlag String? @map(\"area_flag\")\n\n  seasons Season[]\n\n  createdAt DateTime @default(now()) @map(\"created_at\")\n  updatedAt DateTime @updatedAt @map(\"updated_at\")\n\n  @@map(\"leagues\")\n}\n\n// 3. Season: 특정 연도의 리그 (League의 자식)\nmodel Season {\n  id       Int    @id @default(autoincrement())\n  apiId    Int    @unique @map(\"api_id\")\n  leagueId Int    @map(\"league_id\")\n  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)\n\n  startDate DateTime @map(\"start_date\")\n  endDate   DateTime @map(\"end_date\")\n\n  // 관계 설정\n  seasonTeams SeasonTeam[]\n  matches     Match[]\n\n  createdAt DateTime @default(now()) @map(\"created_at\")\n  updatedAt DateTime @updatedAt @map(\"updated_at\")\n\n  @@unique([leagueId, apiId])\n  @@map(\"seasons\")\n}\n\n// 4. Team: 독립적인 구단 정보\nmodel Team {\n  id        Int     @id @default(autoincrement())\n  apiId     Int     @unique @map(\"api_id\")\n  name      String  @db.VarChar(100)\n  shortName String? @map(\"short_name\")\n  tla       String? @db.VarChar(10)\n  crest     String? @db.Text\n\n  // 관계 설정\n  seasonTeams SeasonTeam[]\n  homeMatches Match[]      @relation(\"HomeMatch\")\n  awayMatches Match[]      @relation(\"AwayMatch\")\n\n  createdAt DateTime @default(now()) @map(\"created_at\")\n  updatedAt DateTime @updatedAt @map(\"updated_at\")\n\n  @@map(\"teams\")\n}\n\n// 5. SeasonTeam: 시즌과 팀의 다대다 연결 (중간 테이블)\nmodel SeasonTeam {\n  id       Int @id @default(autoincrement())\n  seasonId Int @map(\"season_id\")\n  teamId   Int @map(\"team_id\")\n\n  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)\n  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)\n\n  @@unique([seasonId, teamId])\n  @@map(\"season_teams\")\n}\n\n// 6. Match: 특정 시즌에 벌어지는 경기 (최종 데이터)\nmodel Match {\n  id    Int @id @default(autoincrement())\n  apiId Int @unique @map(\"api_id\")\n\n  seasonId Int    @map(\"season_id\")\n  season   Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)\n\n  utcDate  DateTime @map(\"utc_date\")\n  status   String   @db.VarChar(20)\n  matchday Int\n  stage    String?  @db.VarChar(50)\n\n  homeTeamId Int  @map(\"home_team_id\")\n  homeTeam   Team @relation(\"HomeMatch\", fields: [homeTeamId], references: [id])\n\n  awayTeamId Int  @map(\"away_team_id\")\n  awayTeam   Team @relation(\"AwayMatch\", fields: [awayTeamId], references: [id])\n\n  winner    String? @db.VarChar(20)\n  homeScore Int?    @map(\"home_score\")\n  awayScore Int?    @map(\"away_score\")\n\n  // 베팅 풀 (비즈니스 로직)\n  poolHome Decimal @default(0.00) @map(\"pool_home\") @db.Decimal(15, 2)\n  poolDraw Decimal @default(0.00) @map(\"pool_draw\") @db.Decimal(15, 2)\n  poolAway Decimal @default(0.00) @map(\"pool_away\") @db.Decimal(15, 2)\n\n  createdAt DateTime @default(now()) @map(\"created_at\")\n  updatedAt DateTime @updatedAt @map(\"updated_at\")\n\n  @@map(\"matches\")\n}\n",
   "runtimeDataModel": {
     "models": {},
     "enums": {},
@@ -28,7 +28,7 @@ const config: runtime.GetPrismaClientConfig = {
   }
 }
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"User\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"provider\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"socialId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"username\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"password\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"avatarUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"User\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"provider\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"socialId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"username\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"password\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"avatarUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":\"users\"},\"League\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"apiId\",\"kind\":\"scalar\",\"type\":\"Int\",\"dbName\":\"api_id\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"code\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"type\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"emblem\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"areaName\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"area_name\"},{\"name\":\"areaCode\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"area_code\"},{\"name\":\"areaFlag\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"area_flag\"},{\"name\":\"seasons\",\"kind\":\"object\",\"type\":\"Season\",\"relationName\":\"LeagueToSeason\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"created_at\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"updated_at\"}],\"dbName\":\"leagues\"},\"Season\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"apiId\",\"kind\":\"scalar\",\"type\":\"Int\",\"dbName\":\"api_id\"},{\"name\":\"leagueId\",\"kind\":\"scalar\",\"type\":\"Int\",\"dbName\":\"league_id\"},{\"name\":\"league\",\"kind\":\"object\",\"type\":\"League\",\"relationName\":\"LeagueToSeason\"},{\"name\":\"startDate\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"start_date\"},{\"name\":\"endDate\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"end_date\"},{\"name\":\"seasonTeams\",\"kind\":\"object\",\"type\":\"SeasonTeam\",\"relationName\":\"SeasonToSeasonTeam\"},{\"name\":\"matches\",\"kind\":\"object\",\"type\":\"Match\",\"relationName\":\"MatchToSeason\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"created_at\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"updated_at\"}],\"dbName\":\"seasons\"},\"Team\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"apiId\",\"kind\":\"scalar\",\"type\":\"Int\",\"dbName\":\"api_id\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"shortName\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"short_name\"},{\"name\":\"tla\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"crest\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"seasonTeams\",\"kind\":\"object\",\"type\":\"SeasonTeam\",\"relationName\":\"SeasonTeamToTeam\"},{\"name\":\"homeMatches\",\"kind\":\"object\",\"type\":\"Match\",\"relationName\":\"HomeMatch\"},{\"name\":\"awayMatches\",\"kind\":\"object\",\"type\":\"Match\",\"relationName\":\"AwayMatch\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"created_at\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"updated_at\"}],\"dbName\":\"teams\"},\"SeasonTeam\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"seasonId\",\"kind\":\"scalar\",\"type\":\"Int\",\"dbName\":\"season_id\"},{\"name\":\"teamId\",\"kind\":\"scalar\",\"type\":\"Int\",\"dbName\":\"team_id\"},{\"name\":\"season\",\"kind\":\"object\",\"type\":\"Season\",\"relationName\":\"SeasonToSeasonTeam\"},{\"name\":\"team\",\"kind\":\"object\",\"type\":\"Team\",\"relationName\":\"SeasonTeamToTeam\"}],\"dbName\":\"season_teams\"},\"Match\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"apiId\",\"kind\":\"scalar\",\"type\":\"Int\",\"dbName\":\"api_id\"},{\"name\":\"seasonId\",\"kind\":\"scalar\",\"type\":\"Int\",\"dbName\":\"season_id\"},{\"name\":\"season\",\"kind\":\"object\",\"type\":\"Season\",\"relationName\":\"MatchToSeason\"},{\"name\":\"utcDate\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"utc_date\"},{\"name\":\"status\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"matchday\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"stage\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"homeTeamId\",\"kind\":\"scalar\",\"type\":\"Int\",\"dbName\":\"home_team_id\"},{\"name\":\"homeTeam\",\"kind\":\"object\",\"type\":\"Team\",\"relationName\":\"HomeMatch\"},{\"name\":\"awayTeamId\",\"kind\":\"scalar\",\"type\":\"Int\",\"dbName\":\"away_team_id\"},{\"name\":\"awayTeam\",\"kind\":\"object\",\"type\":\"Team\",\"relationName\":\"AwayMatch\"},{\"name\":\"winner\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"homeScore\",\"kind\":\"scalar\",\"type\":\"Int\",\"dbName\":\"home_score\"},{\"name\":\"awayScore\",\"kind\":\"scalar\",\"type\":\"Int\",\"dbName\":\"away_score\"},{\"name\":\"poolHome\",\"kind\":\"scalar\",\"type\":\"Decimal\",\"dbName\":\"pool_home\"},{\"name\":\"poolDraw\",\"kind\":\"scalar\",\"type\":\"Decimal\",\"dbName\":\"pool_draw\"},{\"name\":\"poolAway\",\"kind\":\"scalar\",\"type\":\"Decimal\",\"dbName\":\"pool_away\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"created_at\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\",\"dbName\":\"updated_at\"}],\"dbName\":\"matches\"}},\"enums\":{},\"types\":{}}")
 
 async function decodeBase64AsWasm(wasmBase64: string): Promise<WebAssembly.Module> {
   const { Buffer } = await import('node:buffer')
@@ -185,6 +185,56 @@ export interface PrismaClient<
     * ```
     */
   get user(): Prisma.UserDelegate<ExtArgs, { omit: OmitOpts }>;
+
+  /**
+   * `prisma.league`: Exposes CRUD operations for the **League** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Leagues
+    * const leagues = await prisma.league.findMany()
+    * ```
+    */
+  get league(): Prisma.LeagueDelegate<ExtArgs, { omit: OmitOpts }>;
+
+  /**
+   * `prisma.season`: Exposes CRUD operations for the **Season** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Seasons
+    * const seasons = await prisma.season.findMany()
+    * ```
+    */
+  get season(): Prisma.SeasonDelegate<ExtArgs, { omit: OmitOpts }>;
+
+  /**
+   * `prisma.team`: Exposes CRUD operations for the **Team** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Teams
+    * const teams = await prisma.team.findMany()
+    * ```
+    */
+  get team(): Prisma.TeamDelegate<ExtArgs, { omit: OmitOpts }>;
+
+  /**
+   * `prisma.seasonTeam`: Exposes CRUD operations for the **SeasonTeam** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SeasonTeams
+    * const seasonTeams = await prisma.seasonTeam.findMany()
+    * ```
+    */
+  get seasonTeam(): Prisma.SeasonTeamDelegate<ExtArgs, { omit: OmitOpts }>;
+
+  /**
+   * `prisma.match`: Exposes CRUD operations for the **Match** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Matches
+    * const matches = await prisma.match.findMany()
+    * ```
+    */
+  get match(): Prisma.MatchDelegate<ExtArgs, { omit: OmitOpts }>;
 }
 
 export function getPrismaClientClass(): PrismaClientConstructor {

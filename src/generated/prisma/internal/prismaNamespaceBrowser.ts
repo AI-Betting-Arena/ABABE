@@ -51,7 +51,12 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
-  User: 'User'
+  User: 'User',
+  League: 'League',
+  Season: 'Season',
+  Team: 'Team',
+  SeasonTeam: 'SeasonTeam',
+  Match: 'Match'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -83,6 +88,82 @@ export const UserScalarFieldEnum = {
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const LeagueScalarFieldEnum = {
+  id: 'id',
+  apiId: 'apiId',
+  name: 'name',
+  code: 'code',
+  type: 'type',
+  emblem: 'emblem',
+  areaName: 'areaName',
+  areaCode: 'areaCode',
+  areaFlag: 'areaFlag',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type LeagueScalarFieldEnum = (typeof LeagueScalarFieldEnum)[keyof typeof LeagueScalarFieldEnum]
+
+
+export const SeasonScalarFieldEnum = {
+  id: 'id',
+  apiId: 'apiId',
+  leagueId: 'leagueId',
+  startDate: 'startDate',
+  endDate: 'endDate',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SeasonScalarFieldEnum = (typeof SeasonScalarFieldEnum)[keyof typeof SeasonScalarFieldEnum]
+
+
+export const TeamScalarFieldEnum = {
+  id: 'id',
+  apiId: 'apiId',
+  name: 'name',
+  shortName: 'shortName',
+  tla: 'tla',
+  crest: 'crest',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TeamScalarFieldEnum = (typeof TeamScalarFieldEnum)[keyof typeof TeamScalarFieldEnum]
+
+
+export const SeasonTeamScalarFieldEnum = {
+  id: 'id',
+  seasonId: 'seasonId',
+  teamId: 'teamId'
+} as const
+
+export type SeasonTeamScalarFieldEnum = (typeof SeasonTeamScalarFieldEnum)[keyof typeof SeasonTeamScalarFieldEnum]
+
+
+export const MatchScalarFieldEnum = {
+  id: 'id',
+  apiId: 'apiId',
+  seasonId: 'seasonId',
+  utcDate: 'utcDate',
+  status: 'status',
+  matchday: 'matchday',
+  stage: 'stage',
+  homeTeamId: 'homeTeamId',
+  awayTeamId: 'awayTeamId',
+  winner: 'winner',
+  homeScore: 'homeScore',
+  awayScore: 'awayScore',
+  poolHome: 'poolHome',
+  poolDraw: 'poolDraw',
+  poolAway: 'poolAway',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type MatchScalarFieldEnum = (typeof MatchScalarFieldEnum)[keyof typeof MatchScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -315,7 +315,7 @@ export type UserCreateInput = {
   socialId: string
   username: string
   email?: string | null
-  password: string
+  password?: string
   avatarUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -327,7 +327,7 @@ export type UserUncheckedCreateInput = {
   socialId: string
   username: string
   email?: string | null
-  password: string
+  password?: string
   avatarUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -362,7 +362,7 @@ export type UserCreateManyInput = {
   socialId: string
   username: string
   email?: string | null
-  password: string
+  password?: string
   avatarUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string

@@ -14,25 +14,128 @@ datasource db {
   provider = "postgresql"
 }
 
-// prisma/schema.prisma
 
+
+// 1. User & Auth: 시스템의 주체
 model User {
   id           Int      @id @default(autoincrement())
-  
-  // 인증 관련 핵심 정보
-  provider     String   // "github", "google" 등 (확장성 대비)
-  socialId     String   // 해당 서비스의 고유 ID
-    @@unique([socialId, provider])
-  
-  // 유저 프로필 정보
+  provider     String   // "github", "google" 등
+  socialId     String   // 소셜 고유 ID
   username     String
-  email        String?  @unique // 이메일은 선택적 (GitHub 설정에 따라 없을 수 있음)
-  password     String
+  email        String?  @unique
+  password     String   @default("")
   avatarUrl    String?
-  
-  // 시스템 기록
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  // 이후 Bets, Events 등과 관계 설정 예정
+  @@unique([socialId, provider])
+  @@map("users")
+}
+
+// 2. League: 대회 그 자체 (최상위 부모)
+model League {
+  id            Int      @id @default(autoincrement())
+  apiId         Int      @unique @map("api_id")
+  name          String   @db.VarChar(100)
+  code          String   @unique @db.VarChar(10) // 예: PL
+  type          String?  @db.VarChar(20)
+  emblem        String?  @db.Text
+  areaName      String?  @map("area_name")
+  areaCode      String?  @map("area_code")
+  areaFlag      String?  @map("area_flag")
+  
+  seasons       Season[]
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("leagues")
+}
+
+// 3. Season: 특정 연도의 리그 (League의 자식)
+model Season {
+  id              Int      @id @default(autoincrement())
+  apiId           Int      @unique @map("api_id")
+  leagueId        Int      @map("league_id")
+  league          League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  startDate       DateTime @map("start_date")
+  endDate         DateTime @map("end_date")
+
+  // 관계 설정
+  seasonTeams     SeasonTeam[] 
+  matches         Match[]
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([leagueId, apiId])
+  @@map("seasons")
+}
+
+// 4. Team: 독립적인 구단 정보
+model Team {
+  id          Int      @id @default(autoincrement())
+  apiId       Int      @unique @map("api_id")
+  name        String   @db.VarChar(100)
+  shortName   String?  @map("short_name")
+  tla         String?  @db.VarChar(10)
+  crest       String?  @db.Text
+  
+  // 관계 설정
+  seasonTeams  SeasonTeam[]
+  homeMatches  Match[] @relation("HomeMatch")
+  awayMatches  Match[] @relation("AwayMatch")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("teams")
+}
+
+// 5. SeasonTeam: 시즌과 팀의 다대다 연결 (중간 테이블)
+model SeasonTeam {
+  id        Int      @id @default(autoincrement())
+  seasonId  Int      @map("season_id")
+  teamId    Int      @map("team_id")
+  
+  season    Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([seasonId, teamId])
+  @@map("season_teams")
+}
+
+// 6. Match: 특정 시즌에 벌어지는 경기 (최종 데이터)
+model Match {
+  id            Int      @id @default(autoincrement())
+  apiId         Int      @unique @map("api_id")
+  
+  seasonId      Int      @map("season_id")
+  season        Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  
+  utcDate       DateTime @map("utc_date")
+  status        String   @db.VarChar(20)
+  matchday      Int      
+  stage         String?  @db.VarChar(50)
+
+  homeTeamId    Int      @map("home_team_id")
+  homeTeam      Team     @relation("HomeMatch", fields: [homeTeamId], references: [id])
+  
+  awayTeamId    Int      @map("away_team_id")
+  awayTeam      Team     @relation("AwayMatch", fields: [awayTeamId], references: [id])
+
+  winner        String?  @db.VarChar(20)
+  homeScore     Int?     @map("home_score")
+  awayScore     Int?     @map("away_score")
+
+  // 베팅 풀 (비즈니스 로직)
+  poolHome      Decimal  @default(0.00) @map("pool_home") @db.Decimal(15, 2)
+  poolDraw      Decimal  @default(0.00) @map("pool_draw") @db.Decimal(15, 2)
+  poolAway      Decimal  @default(0.00) @map("pool_away") @db.Decimal(15, 2)
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("matches")
 }

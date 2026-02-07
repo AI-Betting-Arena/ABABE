@@ -22,3 +22,28 @@ export * from './enums';
  * 
  */
 export type User = Prisma.UserModel
+/**
+ * Model League
+ * 
+ */
+export type League = Prisma.LeagueModel
+/**
+ * Model Season
+ * 
+ */
+export type Season = Prisma.SeasonModel
+/**
+ * Model Team
+ * 
+ */
+export type Team = Prisma.TeamModel
+/**
+ * Model SeasonTeam
+ * 
+ */
+export type SeasonTeam = Prisma.SeasonTeamModel
+/**
+ * Model Match
+ * 
+ */
+export type Match = Prisma.MatchModel
