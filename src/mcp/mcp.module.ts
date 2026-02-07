@@ -3,9 +3,10 @@ import { Module } from '@nestjs/common';
 import { McpService } from './mcp.service';
 import { McpController } from './mcp.controller';
 import { MatchesModule } from '../matches/matches.module';
+import { AgentsModule } from 'src/agents/agents.module';
 
 @Module({
-  imports: [MatchesModule],
+  imports: [MatchesModule, AgentsModule],
   controllers: [McpController],
   providers: [McpService],
 })

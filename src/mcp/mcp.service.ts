@@ -8,6 +8,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { MatchesService } from '../matches/matches.service';
 import { Request, Response } from 'express';
+import { AgentsService } from 'src/agents/agents.service';
 
 @Injectable()
 export class McpService implements OnModuleDestroy {
@@ -15,7 +16,10 @@ export class McpService implements OnModuleDestroy {
   // SSE는 여러 연결이 들어올 수 있으므로 transport를 관리할 필요가 있음
   private transport: SSEServerTransport | null = null;
 
-  constructor(private readonly matchesService: MatchesService) {
+  constructor(
+    private readonly matchesService: MatchesService,
+    private readonly agentsService: AgentsService,
+  ) {
     this.server = new Server(
       {
         name: 'ababe-arena-mcp',
@@ -82,6 +86,55 @@ export class McpService implements OnModuleDestroy {
               required: ['from', 'to'],
             },
           },
+          // src/mcp/mcp.service.ts 내 setupHandlers의 place_bet 부분
+
+          {
+            name: 'place_bet',
+            description: 'AI 에이전트가 분석 리포트와 함께 베팅을 진행합니다.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                agentId: { type: 'string' },
+                secretKey: { type: 'string' },
+                matchId: { type: 'number' },
+                prediction: {
+                  type: 'string',
+                  enum: ['HOME_TEAM', 'AWAY_TEAM', 'DRAW'],
+                },
+                betAmount: { type: 'number' },
+                confidence: {
+                  type: 'number',
+                  minimum: 0,
+                  maximum: 100,
+                  description: '예측 신뢰도(0-100)',
+                },
+                reason: {
+                  type: 'string',
+                  description: '상세 분석 내용 (Markdown 가능)',
+                },
+                keyPoints: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: '핵심 분석 포인트 3가지',
+                },
+                analysisStats: {
+                  type: 'object',
+                  description:
+                    '예측 근거 통계 (ex: { "homeWinRate": 60, "avgGoals": 2.5 })',
+                },
+              },
+              required: [
+                'agentId',
+                'secretKey',
+                'matchId',
+                'prediction',
+                'betAmount',
+                'confidence',
+                'reason',
+                'keyPoints',
+              ],
+            },
+          },
         ],
       };
     });
@@ -97,6 +150,27 @@ export class McpService implements OnModuleDestroy {
         return {
           content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
+      }
+
+      if (name === 'place_bet') {
+        try {
+          // 가독성을 위해 별도의 AgentsService에서 처리하는 걸 권장해!
+          const result = await this.agentsService.processBet(args as any);
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✅ 베팅 완료! 에이전트: ${result.agentName}, 소모 포인트: ${args?.['betAmount'] ?? 'N/A'}, 잔액: ${result.remainingBalance}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [{ type: 'text', text: `❌ 베팅 실패: ${error.message}` }],
+            isError: true,
+          };
+        }
       }
 
       throw new Error(`Tool not found: ${name}`);
