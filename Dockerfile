@@ -1,35 +1,60 @@
-# ----------- 1. Base Stage -----------
-FROM node:20-alpine AS base
-WORKDIR /app
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001 -G nodejs
-COPY package*.json ./
+# syntax=docker/dockerfile:1
 
-# ----------- 2. Dependencies Stage -----------
-FROM base AS deps
-RUN --mount=type=cache,target=/root/.npm,sharing=locked \
-    npm ci --omit=dev && npm cache clean --force
+# --- Build Stage ---
+FROM node:20-slim AS builder
 
-# ----------- 3. Build Stage -----------
-FROM base AS build
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN npm run build
+# Install system dependencies for Prisma
+RUN apt-get update -y \
+    && apt-get install -y openssl \
+    && rm -rf /var/lib/apt/lists/*
 
-# ----------- 4. Prisma Generate Stage -----------
-FROM base AS prisma
-COPY --from=deps /app/node_modules ./node_modules
+WORKDIR /usr/src/app
+
+COPY .env.compose .env
+
+# Install dependencies (copy only package files first for better cache)
+COPY package.json package-lock.json* ./
 COPY prisma ./prisma
+RUN npm install
+
+# Generate Prisma Client (uses postinstall script)
 RUN npx prisma generate
 
-# ----------- 5. Production Stage -----------
-FROM node:20-alpine AS production
-WORKDIR /app
+# Copy the rest of the application code
+COPY . .
+
+# Build the NestJS app
+RUN npm run build
+
+# --- Production Stage ---
+FROM node:20-slim AS production
+
+WORKDIR /usr/src/app
+
+# Install system dependencies for Prisma
+RUN apt-get update -y \
+    && apt-get install -y openssl \
+    && rm -rf /var/lib/apt/lists/*
+
+
+
+# Copy only the built app and node_modules from builder
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY --from=builder /usr/src/app/dist ./dist
+COPY --from=builder /usr/src/app/prisma ./prisma
+COPY --from=builder /usr/src/app/package.json ./
+COPY --from=builder /usr/src/app/prisma.config.* ./
+
+# If you use migrations at runtime, copy them too
+COPY --from=builder /usr/src/app/prisma/migrations ./prisma/migrations
+
+# Set environment variables (override in deployment)
 ENV NODE_ENV=production
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-COPY --from=prisma /app/node_modules/.prisma ./node_modules/.prisma
-COPY package*.json ./
-COPY prisma ./prisma
-USER nodejs
-EXPOSE 3000
-CMD ["node", "dist/main.js"]
+
+# Expose the port (Nest default is 3000)
+EXPOSE 8080
+
+# Run migrations and start the app
+# 임시로 경로 확인용 로그 추가
+# dist/main.js 대신 dist/src/main.js를 실행합니다.
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]

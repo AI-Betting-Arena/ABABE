@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: ababe-postgres
+    restart: unless-stopped
+    # env_file 제거, 파일 마운트만 사용
+    ports:
+      - '5431:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: ababe-redis
+    restart: unless-stopped
+    ports:
+      - '6378:6379'
+    volumes:
+      - redisdata:/data
+
+  ababe-app:
+    build: .
+    container_name: ababe-app
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - .env.compose
+    ports:
+      - '8080:8080'
+    volumes:
+      - ./.env.compose:/usr/src/app/.env
+    # .env 파일이 빌드에 포함되어야 함
+
+volumes:
+  pgdata:
+  redisdata:
