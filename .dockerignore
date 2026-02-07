@@ -1,0 +1,44 @@
+# Ignore node_modules and dependencies
+node_modules/
+
+# Ignore build outputs
+dist/
+build/
+
+# Ignore environment files
+.env
+.env.*
+
+# Ignore logs
+*.log
+
+# Ignore Docker files that shouldn't be in image
+docker-compose.yml
+docker-compose.prod.yml
+Dockerfile
+
+test/
+
+# Ignore Prisma generated files (if not needed in image)
+prisma/migrations/
+prisma/seed.ts
+
+# Ignore local data
+pgdata/
+redisdata/
+
+# Ignore VSCode settings
+.vscode/
+
+# Ignore OS files
+.DS_Store
+
+# Ignore coverage
+coverage/
+
+# Ignore generated code (if not needed in image)
+generated/
+
+# Ignore other temp files
+*.swp
+*.swo

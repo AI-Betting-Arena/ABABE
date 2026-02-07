@@ -3,6 +3,7 @@
 # --- Build Stage ---
 FROM node:20-slim AS builder
 
+
 # Install system dependencies for Prisma
 RUN apt-get update -y \
     && apt-get install -y openssl \
@@ -10,12 +11,11 @@ RUN apt-get update -y \
 
 WORKDIR /usr/src/app
 
-COPY .env.compose .env
-
 # Install dependencies (copy only package files first for better cache)
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma
 RUN npm install
+
 
 # Generate Prisma Client (uses postinstall script)
 RUN npx prisma generate
@@ -45,8 +45,9 @@ COPY --from=builder /usr/src/app/prisma ./prisma
 COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/prisma.config.* ./
 
-# If you use migrations at runtime, copy them too
-COPY --from=builder /usr/src/app/prisma/migrations ./prisma/migrations
+
+## If you use migrations at runtime, copy them too
+# (Removed to avoid build error if migrations folder does not exist)
 
 # Set environment variables (override in deployment)
 ENV NODE_ENV=production

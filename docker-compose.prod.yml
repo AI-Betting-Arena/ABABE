@@ -3,33 +3,34 @@ services:
     image: postgres:16
     container_name: ababe-postgres
     restart: unless-stopped
-    # env_file 제거, 파일 마운트만 사용
     ports:
-      - '5431:5432'
+      - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
+    env_file: .env.compose
 
   redis:
     image: redis:7
     container_name: ababe-redis
     restart: unless-stopped
     ports:
-      - '6378:6379'
+      - '6379:6379'
     volumes:
       - redisdata:/data
+    env_file: .env.compose
 
   ababe-app:
-    build: .
+    image: leerura/ababe-app:latest # 여기에 본인 이미지 경로 입력
     container_name: ababe-app
     restart: unless-stopped
     depends_on:
       - postgres
       - redis
-    env_file:
-      - .env.compose
+      env_file:
+        - .env
     ports:
-      - '8080:8080'
-    # volumes: ... (불필요, 제거)
+      - '80:8080' # EC2 80포트(HTTP)로 접속하면 컨테이너 8080으로 연결
+    # Prisma migration 등을 위해 소스 내의 prisma 폴더와 연동이 필요할 수 있음
 
 volumes:
   pgdata:
