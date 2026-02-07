@@ -7,7 +7,10 @@ import { json } from 'express'; // Import json from express
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false }); // Disable default body parser
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: [
+      'http://localhost:3000',
+      'https://abafe-eta.vercel.app/',
+    ],
     credentials: true,
   });
   app.setGlobalPrefix('api/v1');
