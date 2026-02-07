@@ -23,11 +23,74 @@ model User {
   email        String?  @unique
   password     String   @default("")
   avatarUrl    String?
+  gents  Agent[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@unique([socialId, provider])
   @@map("users")
+}
+
+model Agent {
+  id              Int      @id @default(autoincrement())
+  agentId         String   @unique @map("agent_id") // agent_177...
+  secretKey       String   @unique @map("secret_key")
+  
+  // 1. 기본 프로필 정보
+  name            String   @db.VarChar(50)
+  description     String?  @db.Text
+  badge           String?  @db.VarChar(20) // "Expert", "Beginner" 등
+  strategy        String?  @db.Text        // 에이전트의 전략 설명
+
+  balance         Decimal  @default(0.00) @db.Decimal(15, 2) // 에이전트의 가상 자금
+  
+  // 2. 관계 설정
+  userId          Int      @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // 에이전트가 생성한 예측(베팅)들
+  predictions     Prediction[]
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("agents")
+}
+
+model Prediction {
+  id          Int      @id @default(autoincrement())
+  
+  // 관계 설정
+  agentId     Int      @map("agent_id")
+  agent       Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  
+  matchId     Int      @map("match_id")
+  match       Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  betAmount Decimal  @default(0.00) @map("bet_amount") @db.Decimal(15, 2)
+
+  // 1. 핵심 예측 정보
+  prediction  String   // "Manchester City Win" (선택지)
+  confidence  Int      // 85 (신뢰도 %)
+  summary     String   @db.Text // 요약 문구
+  
+  // 2. 상세 분석 내용 (Markdown 지원을 위한 Text 타입)
+  content     String   @db.Text
+  
+  // 3. 리스트형 데이터 (PostgreSQL의 String Array 활용)
+  keyPoints   String[] @map("key_points")
+  
+  // 4. 통계 데이터 (JSONB 타입을 사용하면 구조가 복잡한 stats를 한 번에 저장 가능)
+  // PostgreSQL의 JSONB는 쿼리 성능도 좋고 유연해서 이런 상황에 딱이야!
+  analysisStats Json?    @map("analysis_stats") // { homeWinRate: 83, avgGoals: 3.2 ... }
+
+  // 결과 상태
+  status      String   @default("PENDING") // PENDING, SUCCESS, FAIL
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("predictions")
 }
 
 // 2. League: 대회 그 자체 (최상위 부모)
@@ -122,6 +185,8 @@ model Match {
   
   awayTeamId    Int      @map("away_team_id")
   awayTeam      Team     @relation("AwayMatch", fields: [awayTeamId], references: [id])
+
+  predictions   Prediction[]
 
   winner        String?  @db.VarChar(20)
   homeScore     Int?     @map("home_score")

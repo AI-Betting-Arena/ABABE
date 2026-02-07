@@ -9,6 +9,8 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/User'
+export type * from './models/Agent'
+export type * from './models/Prediction'
 export type * from './models/League'
 export type * from './models/Season'
 export type * from './models/Team'

@@ -355,6 +355,7 @@ export type MatchWhereInput = {
   season?: Prisma.XOR<Prisma.SeasonScalarRelationFilter, Prisma.SeasonWhereInput>
   homeTeam?: Prisma.XOR<Prisma.TeamScalarRelationFilter, Prisma.TeamWhereInput>
   awayTeam?: Prisma.XOR<Prisma.TeamScalarRelationFilter, Prisma.TeamWhereInput>
+  predictions?: Prisma.PredictionListRelationFilter
 }
 
 export type MatchOrderByWithRelationInput = {
@@ -378,6 +379,7 @@ export type MatchOrderByWithRelationInput = {
   season?: Prisma.SeasonOrderByWithRelationInput
   homeTeam?: Prisma.TeamOrderByWithRelationInput
   awayTeam?: Prisma.TeamOrderByWithRelationInput
+  predictions?: Prisma.PredictionOrderByRelationAggregateInput
 }
 
 export type MatchWhereUniqueInput = Prisma.AtLeast<{
@@ -404,6 +406,7 @@ export type MatchWhereUniqueInput = Prisma.AtLeast<{
   season?: Prisma.XOR<Prisma.SeasonScalarRelationFilter, Prisma.SeasonWhereInput>
   homeTeam?: Prisma.XOR<Prisma.TeamScalarRelationFilter, Prisma.TeamWhereInput>
   awayTeam?: Prisma.XOR<Prisma.TeamScalarRelationFilter, Prisma.TeamWhereInput>
+  predictions?: Prisma.PredictionListRelationFilter
 }, "id" | "apiId">
 
 export type MatchOrderByWithAggregationInput = {
@@ -471,6 +474,7 @@ export type MatchCreateInput = {
   season: Prisma.SeasonCreateNestedOneWithoutMatchesInput
   homeTeam: Prisma.TeamCreateNestedOneWithoutHomeMatchesInput
   awayTeam: Prisma.TeamCreateNestedOneWithoutAwayMatchesInput
+  predictions?: Prisma.PredictionCreateNestedManyWithoutMatchInput
 }
 
 export type MatchUncheckedCreateInput = {
@@ -491,6 +495,7 @@ export type MatchUncheckedCreateInput = {
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
+  predictions?: Prisma.PredictionUncheckedCreateNestedManyWithoutMatchInput
 }
 
 export type MatchUpdateInput = {
@@ -510,6 +515,7 @@ export type MatchUpdateInput = {
   season?: Prisma.SeasonUpdateOneRequiredWithoutMatchesNestedInput
   homeTeam?: Prisma.TeamUpdateOneRequiredWithoutHomeMatchesNestedInput
   awayTeam?: Prisma.TeamUpdateOneRequiredWithoutAwayMatchesNestedInput
+  predictions?: Prisma.PredictionUpdateManyWithoutMatchNestedInput
 }
 
 export type MatchUncheckedUpdateInput = {
@@ -530,6 +536,7 @@ export type MatchUncheckedUpdateInput = {
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  predictions?: Prisma.PredictionUncheckedUpdateManyWithoutMatchNestedInput
 }
 
 export type MatchCreateManyInput = {
@@ -586,6 +593,11 @@ export type MatchUncheckedUpdateManyInput = {
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type MatchScalarRelationFilter = {
+  is?: Prisma.MatchWhereInput
+  isNot?: Prisma.MatchWhereInput
 }
 
 export type MatchListRelationFilter = {
@@ -684,6 +696,20 @@ export type MatchSumOrderByAggregateInput = {
   poolHome?: Prisma.SortOrder
   poolDraw?: Prisma.SortOrder
   poolAway?: Prisma.SortOrder
+}
+
+export type MatchCreateNestedOneWithoutPredictionsInput = {
+  create?: Prisma.XOR<Prisma.MatchCreateWithoutPredictionsInput, Prisma.MatchUncheckedCreateWithoutPredictionsInput>
+  connectOrCreate?: Prisma.MatchCreateOrConnectWithoutPredictionsInput
+  connect?: Prisma.MatchWhereUniqueInput
+}
+
+export type MatchUpdateOneRequiredWithoutPredictionsNestedInput = {
+  create?: Prisma.XOR<Prisma.MatchCreateWithoutPredictionsInput, Prisma.MatchUncheckedCreateWithoutPredictionsInput>
+  connectOrCreate?: Prisma.MatchCreateOrConnectWithoutPredictionsInput
+  upsert?: Prisma.MatchUpsertWithoutPredictionsInput
+  connect?: Prisma.MatchWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.MatchUpdateToOneWithWhereWithoutPredictionsInput, Prisma.MatchUpdateWithoutPredictionsInput>, Prisma.MatchUncheckedUpdateWithoutPredictionsInput>
 }
 
 export type MatchCreateNestedManyWithoutSeasonInput = {
@@ -820,12 +846,98 @@ export type NullableIntFieldUpdateOperationsInput = {
   divide?: number
 }
 
-export type DecimalFieldUpdateOperationsInput = {
-  set?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  increment?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  decrement?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  multiply?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  divide?: runtime.Decimal | runtime.DecimalJsLike | number | string
+export type MatchCreateWithoutPredictionsInput = {
+  apiId: number
+  utcDate: Date | string
+  status: string
+  matchday: number
+  stage?: string | null
+  winner?: string | null
+  homeScore?: number | null
+  awayScore?: number | null
+  poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  season: Prisma.SeasonCreateNestedOneWithoutMatchesInput
+  homeTeam: Prisma.TeamCreateNestedOneWithoutHomeMatchesInput
+  awayTeam: Prisma.TeamCreateNestedOneWithoutAwayMatchesInput
+}
+
+export type MatchUncheckedCreateWithoutPredictionsInput = {
+  id?: number
+  apiId: number
+  seasonId: number
+  utcDate: Date | string
+  status: string
+  matchday: number
+  stage?: string | null
+  homeTeamId: number
+  awayTeamId: number
+  winner?: string | null
+  homeScore?: number | null
+  awayScore?: number | null
+  poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type MatchCreateOrConnectWithoutPredictionsInput = {
+  where: Prisma.MatchWhereUniqueInput
+  create: Prisma.XOR<Prisma.MatchCreateWithoutPredictionsInput, Prisma.MatchUncheckedCreateWithoutPredictionsInput>
+}
+
+export type MatchUpsertWithoutPredictionsInput = {
+  update: Prisma.XOR<Prisma.MatchUpdateWithoutPredictionsInput, Prisma.MatchUncheckedUpdateWithoutPredictionsInput>
+  create: Prisma.XOR<Prisma.MatchCreateWithoutPredictionsInput, Prisma.MatchUncheckedCreateWithoutPredictionsInput>
+  where?: Prisma.MatchWhereInput
+}
+
+export type MatchUpdateToOneWithWhereWithoutPredictionsInput = {
+  where?: Prisma.MatchWhereInput
+  data: Prisma.XOR<Prisma.MatchUpdateWithoutPredictionsInput, Prisma.MatchUncheckedUpdateWithoutPredictionsInput>
+}
+
+export type MatchUpdateWithoutPredictionsInput = {
+  apiId?: Prisma.IntFieldUpdateOperationsInput | number
+  utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  matchday?: Prisma.IntFieldUpdateOperationsInput | number
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  winner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  season?: Prisma.SeasonUpdateOneRequiredWithoutMatchesNestedInput
+  homeTeam?: Prisma.TeamUpdateOneRequiredWithoutHomeMatchesNestedInput
+  awayTeam?: Prisma.TeamUpdateOneRequiredWithoutAwayMatchesNestedInput
+}
+
+export type MatchUncheckedUpdateWithoutPredictionsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  apiId?: Prisma.IntFieldUpdateOperationsInput | number
+  seasonId?: Prisma.IntFieldUpdateOperationsInput | number
+  utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  matchday?: Prisma.IntFieldUpdateOperationsInput | number
+  stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeTeamId?: Prisma.IntFieldUpdateOperationsInput | number
+  awayTeamId?: Prisma.IntFieldUpdateOperationsInput | number
+  winner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type MatchCreateWithoutSeasonInput = {
@@ -844,6 +956,7 @@ export type MatchCreateWithoutSeasonInput = {
   updatedAt?: Date | string
   homeTeam: Prisma.TeamCreateNestedOneWithoutHomeMatchesInput
   awayTeam: Prisma.TeamCreateNestedOneWithoutAwayMatchesInput
+  predictions?: Prisma.PredictionCreateNestedManyWithoutMatchInput
 }
 
 export type MatchUncheckedCreateWithoutSeasonInput = {
@@ -863,6 +976,7 @@ export type MatchUncheckedCreateWithoutSeasonInput = {
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
+  predictions?: Prisma.PredictionUncheckedCreateNestedManyWithoutMatchInput
 }
 
 export type MatchCreateOrConnectWithoutSeasonInput = {
@@ -930,6 +1044,7 @@ export type MatchCreateWithoutHomeTeamInput = {
   updatedAt?: Date | string
   season: Prisma.SeasonCreateNestedOneWithoutMatchesInput
   awayTeam: Prisma.TeamCreateNestedOneWithoutAwayMatchesInput
+  predictions?: Prisma.PredictionCreateNestedManyWithoutMatchInput
 }
 
 export type MatchUncheckedCreateWithoutHomeTeamInput = {
@@ -949,6 +1064,7 @@ export type MatchUncheckedCreateWithoutHomeTeamInput = {
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
+  predictions?: Prisma.PredictionUncheckedCreateNestedManyWithoutMatchInput
 }
 
 export type MatchCreateOrConnectWithoutHomeTeamInput = {
@@ -977,6 +1093,7 @@ export type MatchCreateWithoutAwayTeamInput = {
   updatedAt?: Date | string
   season: Prisma.SeasonCreateNestedOneWithoutMatchesInput
   homeTeam: Prisma.TeamCreateNestedOneWithoutHomeMatchesInput
+  predictions?: Prisma.PredictionCreateNestedManyWithoutMatchInput
 }
 
 export type MatchUncheckedCreateWithoutAwayTeamInput = {
@@ -996,6 +1113,7 @@ export type MatchUncheckedCreateWithoutAwayTeamInput = {
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
+  predictions?: Prisma.PredictionUncheckedCreateNestedManyWithoutMatchInput
 }
 
 export type MatchCreateOrConnectWithoutAwayTeamInput = {
@@ -1075,6 +1193,7 @@ export type MatchUpdateWithoutSeasonInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   homeTeam?: Prisma.TeamUpdateOneRequiredWithoutHomeMatchesNestedInput
   awayTeam?: Prisma.TeamUpdateOneRequiredWithoutAwayMatchesNestedInput
+  predictions?: Prisma.PredictionUpdateManyWithoutMatchNestedInput
 }
 
 export type MatchUncheckedUpdateWithoutSeasonInput = {
@@ -1094,6 +1213,7 @@ export type MatchUncheckedUpdateWithoutSeasonInput = {
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  predictions?: Prisma.PredictionUncheckedUpdateManyWithoutMatchNestedInput
 }
 
 export type MatchUncheckedUpdateManyWithoutSeasonInput = {
@@ -1169,6 +1289,7 @@ export type MatchUpdateWithoutHomeTeamInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   season?: Prisma.SeasonUpdateOneRequiredWithoutMatchesNestedInput
   awayTeam?: Prisma.TeamUpdateOneRequiredWithoutAwayMatchesNestedInput
+  predictions?: Prisma.PredictionUpdateManyWithoutMatchNestedInput
 }
 
 export type MatchUncheckedUpdateWithoutHomeTeamInput = {
@@ -1188,6 +1309,7 @@ export type MatchUncheckedUpdateWithoutHomeTeamInput = {
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  predictions?: Prisma.PredictionUncheckedUpdateManyWithoutMatchNestedInput
 }
 
 export type MatchUncheckedUpdateManyWithoutHomeTeamInput = {
@@ -1225,6 +1347,7 @@ export type MatchUpdateWithoutAwayTeamInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   season?: Prisma.SeasonUpdateOneRequiredWithoutMatchesNestedInput
   homeTeam?: Prisma.TeamUpdateOneRequiredWithoutHomeMatchesNestedInput
+  predictions?: Prisma.PredictionUpdateManyWithoutMatchNestedInput
 }
 
 export type MatchUncheckedUpdateWithoutAwayTeamInput = {
@@ -1244,6 +1367,7 @@ export type MatchUncheckedUpdateWithoutAwayTeamInput = {
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  predictions?: Prisma.PredictionUncheckedUpdateManyWithoutMatchNestedInput
 }
 
 export type MatchUncheckedUpdateManyWithoutAwayTeamInput = {
@@ -1265,6 +1389,35 @@ export type MatchUncheckedUpdateManyWithoutAwayTeamInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+
+/**
+ * Count Type MatchCountOutputType
+ */
+
+export type MatchCountOutputType = {
+  predictions: number
+}
+
+export type MatchCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  predictions?: boolean | MatchCountOutputTypeCountPredictionsArgs
+}
+
+/**
+ * MatchCountOutputType without action
+ */
+export type MatchCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the MatchCountOutputType
+   */
+  select?: Prisma.MatchCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * MatchCountOutputType without action
+ */
+export type MatchCountOutputTypeCountPredictionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PredictionWhereInput
+}
 
 
 export type MatchSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1288,6 +1441,8 @@ export type MatchSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   season?: boolean | Prisma.SeasonDefaultArgs<ExtArgs>
   homeTeam?: boolean | Prisma.TeamDefaultArgs<ExtArgs>
   awayTeam?: boolean | Prisma.TeamDefaultArgs<ExtArgs>
+  predictions?: boolean | Prisma.Match$predictionsArgs<ExtArgs>
+  _count?: boolean | Prisma.MatchCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["match"]>
 
 export type MatchSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1361,6 +1516,8 @@ export type MatchInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   season?: boolean | Prisma.SeasonDefaultArgs<ExtArgs>
   homeTeam?: boolean | Prisma.TeamDefaultArgs<ExtArgs>
   awayTeam?: boolean | Prisma.TeamDefaultArgs<ExtArgs>
+  predictions?: boolean | Prisma.Match$predictionsArgs<ExtArgs>
+  _count?: boolean | Prisma.MatchCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type MatchIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   season?: boolean | Prisma.SeasonDefaultArgs<ExtArgs>
@@ -1379,6 +1536,7 @@ export type $MatchPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     season: Prisma.$SeasonPayload<ExtArgs>
     homeTeam: Prisma.$TeamPayload<ExtArgs>
     awayTeam: Prisma.$TeamPayload<ExtArgs>
+    predictions: Prisma.$PredictionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -1795,6 +1953,7 @@ export interface Prisma__MatchClient<T, Null = never, ExtArgs extends runtime.Ty
   season<T extends Prisma.SeasonDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SeasonDefaultArgs<ExtArgs>>): Prisma.Prisma__SeasonClient<runtime.Types.Result.GetResult<Prisma.$SeasonPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   homeTeam<T extends Prisma.TeamDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TeamDefaultArgs<ExtArgs>>): Prisma.Prisma__TeamClient<runtime.Types.Result.GetResult<Prisma.$TeamPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   awayTeam<T extends Prisma.TeamDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TeamDefaultArgs<ExtArgs>>): Prisma.Prisma__TeamClient<runtime.Types.Result.GetResult<Prisma.$TeamPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  predictions<T extends Prisma.Match$predictionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Match$predictionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PredictionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2234,6 +2393,30 @@ export type MatchDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Limit how many Matches to delete.
    */
   limit?: number
+}
+
+/**
+ * Match.predictions
+ */
+export type Match$predictionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Prediction
+   */
+  select?: Prisma.PredictionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Prediction
+   */
+  omit?: Prisma.PredictionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PredictionInclude<ExtArgs> | null
+  where?: Prisma.PredictionWhereInput
+  orderBy?: Prisma.PredictionOrderByWithRelationInput | Prisma.PredictionOrderByWithRelationInput[]
+  cursor?: Prisma.PredictionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PredictionScalarFieldEnum | Prisma.PredictionScalarFieldEnum[]
 }
 
 /**
