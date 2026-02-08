@@ -31,6 +31,9 @@ export class MatchesService {
         },
         homeTeam: true,
         awayTeam: true,
+        predictions: { // Include predictions to count them
+          select: { id: true },
+        },
       },
       orderBy: {
         utcDate: 'asc',
@@ -67,7 +70,7 @@ export class MatchesService {
             match.poolAway.toNumber() > 0
               ? parseFloat((totalPool / match.poolAway.toNumber()).toFixed(2))
               : 0,
-          agentCount: 5, // Placeholder
+          agentCount: match.predictions.length, // Use actual count of predictions
         };
 
         if (league) {
