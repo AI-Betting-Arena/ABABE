@@ -2,9 +2,9 @@ import { Controller, Get, Query, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse, ApiParam, ApiOkResponse } from '@nestjs/swagger';
 import { MatchesService } from './matches.service';
 import { GetMatchesRequestDto } from './dto/request/get-matches-request.dto';
-import { GetMatchesResponseDto } from './dto/response/get-matches-response.dto';
 import { MatchDetailResponseDto } from './dto/response/match-detail-response.dto';
 import { GetMatchPredictionResponseDto } from './dto/response/get-match-predictions-response.dto';
+import { LeagueMatchesDto } from './dto/response/league-matches.dto'; // New import
 
 @ApiTags('matches')
 @Controller('matches')
@@ -35,11 +35,11 @@ export class MatchesController {
   @ApiResponse({
     status: 200,
     description: '경기 목록',
-    type: GetMatchesResponseDto,
+    type: [LeagueMatchesDto], // Updated type to array of LeagueMatchesDto
   })
   async getMatches(
     @Query() query: GetMatchesRequestDto,
-  ): Promise<GetMatchesResponseDto> {
+  ): Promise<LeagueMatchesDto[]> { // Updated return type
     return this.matchesService.findMatches(query.from, query.to);
   }
 

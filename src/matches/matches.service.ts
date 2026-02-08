@@ -1,15 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { GetMatchesResponseDto } from './dto/response/get-matches-response.dto';
+import { Match, Prediction } from 'src/generated/prisma/client';
+import { LeagueMatchesDto } from './dto/response/league-matches.dto';
+// MatchDetailDto is used by the new findMatches method
+import { MatchDetailDto } from './dto/response/match-detail.dto';
+// MatchDetailResponseDto is used by the old getMatchById method
 import { MatchDetailResponseDto } from './dto/response/match-detail-response.dto';
 import { GetMatchPredictionResponseDto } from './dto/response/get-match-predictions-response.dto';
-import { Match, Prediction } from 'src/generated/prisma/client';
 
 @Injectable()
 export class MatchesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findMatches(from: string, to: string): Promise<GetMatchesResponseDto> {
+  async findMatches(from: string, to: string): Promise<LeagueMatchesDto[]> {
     const startDate = new Date(from);
     const endDate = new Date(`${to}T23:59:59.999Z`);
 
@@ -34,24 +37,57 @@ export class MatchesService {
       },
     });
 
-    const events = matches.map((match) => ({
-      id: match.id,
-      league: match.season.league.code,
-      homeTeam: match.homeTeam.shortName ?? match.homeTeam.name,
-      awayTeam: match.awayTeam.shortName ?? match.awayTeam.name,
-      startTime: match.utcDate.toISOString(),
-      status: (match.status === 'TIMED' ? 'OPEN' : 'CLOSED') as
-        | 'OPEN'
-        | 'CLOSED',
-      oddsHome: 1.85,
-      oddsDraw: 3.4,
-      oddsAway: 4.5,
-      agentCount: 5,
-    }));
+    const groupedByLeague = matches.reduce(
+      (acc, match) => {
+        const league = acc.find((l) => l.leagueId === match.season.leagueId);
+        const totalPool =
+          match.poolHome.toNumber() +
+          match.poolDraw.toNumber() +
+          match.poolAway.toNumber();
 
-    return { events };
+        const matchDetail: MatchDetailDto = {
+          id: match.id,
+          homeTeamId: match.homeTeam.id,
+          homeTeamName: match.homeTeam.name,
+          homeTeamEmblemUrl: match.homeTeam.crest,
+          awayTeamId: match.awayTeam.id,
+          awayTeamName: match.awayTeam.name,
+          awayTeamEmblemUrl: match.awayTeam.crest,
+          startTime: match.utcDate,
+          status: match.status,
+          oddsHome:
+            match.poolHome.toNumber() > 0
+              ? parseFloat((totalPool / match.poolHome.toNumber()).toFixed(2))
+              : 0,
+          oddsDraw:
+            match.poolDraw.toNumber() > 0
+              ? parseFloat((totalPool / match.poolDraw.toNumber()).toFixed(2))
+              : 0,
+          oddsAway:
+            match.poolAway.toNumber() > 0
+              ? parseFloat((totalPool / match.poolAway.toNumber()).toFixed(2))
+              : 0,
+          agentCount: 5, // Placeholder
+        };
+
+        if (league) {
+          league.matches.push(matchDetail);
+        } else {
+          acc.push({
+            leagueId: match.season.league.id,
+            leagueName: match.season.league.name,
+            leagueCode: match.season.league.code,
+            leagueEmblemUrl: match.season.league.emblem,
+            matches: [matchDetail],
+          });
+        }
+        return acc;
+      },
+      [] as LeagueMatchesDto[],
+    );
+
+    return groupedByLeague;
   }
-
 
   async getMatchById(id: number): Promise<MatchDetailResponseDto> {
     const match = await this.prisma.match.findUnique({
@@ -157,4 +193,6 @@ export class MatchesService {
       status: p.status as 'PENDING' | 'SUCCESS' | 'FAIL',
       createdAt: p.createdAt,
     }));
-  }}
+  }
+}
+
