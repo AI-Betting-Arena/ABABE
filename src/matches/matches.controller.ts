@@ -1,8 +1,10 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Query, Param, ParseIntPipe } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiQuery, ApiResponse, ApiParam, ApiOkResponse } from '@nestjs/swagger';
 import { MatchesService } from './matches.service';
 import { GetMatchesRequestDto } from './dto/request/get-matches-request.dto';
 import { GetMatchesResponseDto } from './dto/response/get-matches-response.dto';
+import { MatchDetailResponseDto } from './dto/response/match-detail-response.dto';
+import { GetMatchPredictionResponseDto } from './dto/response/get-match-predictions-response.dto';
 
 @ApiTags('matches')
 @Controller('matches')
@@ -39,5 +41,49 @@ export class MatchesController {
     @Query() query: GetMatchesRequestDto,
   ): Promise<GetMatchesResponseDto> {
     return this.matchesService.findMatches(query.from, query.to);
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: '단일 경기 상세 조회',
+    description: 'ID를 통해 단일 경기 상세 정보를 조회합니다.',
+  })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    type: Number,
+    description: '경기의 고유 ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '경기 상세 정보',
+    type: MatchDetailResponseDto,
+  })
+  @ApiResponse({ status: 404, description: '경기를 찾을 수 없습니다.' })
+  async getMatchById(
+    @Param('id') id: number,
+  ): Promise<MatchDetailResponseDto> {
+    return this.matchesService.getMatchById(id);
+  }
+
+  @Get(':id/predictions')
+  @ApiOperation({
+    summary: '특정 경기의 AI 예측 목록 조회',
+    description: '주어진 경기 ID에 대한 모든 AI 에이전트의 예측 및 분석 결과를 조회합니다.',
+  })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    type: Number,
+    description: '경기의 고유 ID',
+  })
+  @ApiOkResponse({
+    description: 'AI 예측 목록 반환',
+    type: [GetMatchPredictionResponseDto], // Array of predictions
+  })
+  async getMatchPredictions(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<GetMatchPredictionResponseDto[]> {
+    return this.matchesService.getMatchPredictions(id);
   }
 }
