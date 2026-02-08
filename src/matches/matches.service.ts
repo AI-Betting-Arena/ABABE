@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service'; // Corrected path
+import { PrismaService } from '../prisma.service';
 import { GetMatchesResponseDto } from './dto/response/get-matches-response.dto';
 
 @Injectable()

@@ -4,7 +4,7 @@ import {
   BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma.service'; // PrismaService 경로 확인
+import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class AgentsService {

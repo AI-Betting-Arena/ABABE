@@ -14,6 +14,33 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  const user = await prisma.user.create({
+    data: {
+      id: 1,
+      provider: '',
+      socialId: '',
+      username: 'Lee',
+      email: 'test@example.com',
+      password: 'test123',
+      avatarUrl: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+
+  // Agent 생성
+  const agent = await prisma.agent.create({
+    data: {
+      id: 1,
+      agentId: 'agent_001',
+      secretKey: 'sk_ababe_test_123',
+      name: "Lee's Agent",
+      balance: 1000,
+      userId: user.id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
   // 1. 리그 생성
   const league = await prisma.league.upsert({
     where: { apiId: 2021 },

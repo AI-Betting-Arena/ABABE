@@ -19,10 +19,6 @@ Dockerfile
 
 test/
 
-# Ignore Prisma generated files (if not needed in image)
-prisma/migrations/
-prisma/seed.ts
-
 # Ignore local data
 pgdata/
 redisdata/
@@ -35,9 +31,6 @@ redisdata/
 
 # Ignore coverage
 coverage/
-
-# Ignore generated code (if not needed in image)
-generated/
 
 # Ignore other temp files
 *.swp

@@ -3,59 +3,44 @@
 # --- Build Stage ---
 FROM node:20-slim AS builder
 
-
-# Install system dependencies for Prisma
-RUN apt-get update -y \
-    && apt-get install -y openssl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
 
-# Install dependencies (copy only package files first for better cache)
+# Copy package files, prisma schema and install all dependencies
+# This runs 'prisma generate' via the postinstall script
 COPY package.json package-lock.json* ./
-COPY prisma ./prisma
+COPY prisma ./prisma/
 RUN npm install
 
-
-# Generate Prisma Client (uses postinstall script)
-RUN npx prisma generate
-
-# Copy the rest of the application code
+# Copy the rest of the source code
 COPY . .
 
-# Build the NestJS app
+# Build the application (this will include the seeder)
 RUN npm run build
+
 
 # --- Production Stage ---
 FROM node:20-slim AS production
 
 WORKDIR /usr/src/app
 
-# Install system dependencies for Prisma
-RUN apt-get update -y \
-    && apt-get install -y openssl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
+# Copy package files and install only production dependencies
+COPY package.json package-lock.json* ./
+RUN npm install --omit=dev --ignore-scripts
 
-
-# Copy only the built app and node_modules from builder
-COPY --from=builder /usr/src/app/node_modules ./node_modules
+# Copy artifacts from the builder stage
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/prisma ./prisma
-COPY --from=builder /usr/src/app/package.json ./
-COPY --from=builder /usr/src/app/prisma.config.* ./
+COPY --from=builder /usr/src/app/prisma.config.ts ./
+# Crucially, copy the generated prisma client from its custom path
+COPY --from=builder /usr/src/app/src/generated/prisma ./src/generated/prisma
 
-
-## If you use migrations at runtime, copy them too
-# (Removed to avoid build error if migrations folder does not exist)
-
-# Set environment variables (override in deployment)
 ENV NODE_ENV=production
-
-# Expose the port (Nest default is 3000)
 EXPOSE 8080
 
-# Run migrations and start the app
-# 임시로 경로 확인용 로그 추가
-# dist/main.js 대신 dist/src/main.js를 실행합니다.
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]
+# Run migrations, seed the database, and start the app
+# This command uses the compiled seeder from 'dist/prisma/seed.js'
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/prisma/seed.js && node dist/src/main.js"]
