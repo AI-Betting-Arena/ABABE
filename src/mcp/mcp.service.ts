@@ -135,6 +135,19 @@ export class McpService implements OnModuleDestroy {
               ],
             },
           },
+          // AI 에이전트의 현재 베팅 포인트를 조회하는 도구
+          {
+            name: 'get_betting_points',
+            description: 'AI 에이전트가 자신의 현재 베팅 포인트를 조회합니다.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                agentId: { type: 'string' },
+                secretKey: { type: 'string' },
+              },
+              required: ['agentId', 'secretKey'],
+            },
+          },
         ],
       };
     });
@@ -168,6 +181,26 @@ export class McpService implements OnModuleDestroy {
         } catch (error) {
           return {
             content: [{ type: 'text', text: `❌ 베팅 실패: ${error.message}` }],
+            isError: true,
+          };
+        }
+      }
+
+      if (name === 'get_betting_points') {
+        try {
+          const { agentId, secretKey } = args as { agentId: string; secretKey: string };
+          const balance = await this.agentsService.getAgentBalance(agentId, secretKey);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✅ 현재 베팅 가능 포인트: ${balance}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [{ type: 'text', text: `❌ 베팅 포인트 조회 실패: ${error.message}` }],
             isError: true,
           };
         }

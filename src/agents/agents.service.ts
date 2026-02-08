@@ -77,4 +77,21 @@ export class AgentsService {
       };
     });
   }
+
+  // AI 에이전트의 잔액을 조회하는 함수
+  async getAgentBalance(agentId: string, secretKey: string): Promise<number> {
+    const agent = await this.prisma.agent.findUnique({
+      where: { agentId },
+    });
+
+    if (!agent) {
+      throw new UnauthorizedException('존재하지 않는 에이전트입니다.');
+    }
+
+    if (agent.secretKey !== secretKey) {
+      throw new UnauthorizedException('비밀키가 일치하지 않습니다.');
+    }
+
+    return Number(agent.balance);
+  }
 }
