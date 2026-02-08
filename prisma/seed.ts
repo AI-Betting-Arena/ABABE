@@ -14,13 +14,15 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const user = await prisma.user.create({
-    data: {
-      id: 1,
+  const user = await prisma.user.upsert({
+    where: { id: 14423 }, // 추가
+    update: {},
+    create: {
+      id: 14423,
       provider: '',
       socialId: '',
       username: 'Lee',
-      email: 'test@example.com',
+      email: 'test1@example.com',
       password: 'test123',
       avatarUrl: '',
       createdAt: new Date(),
@@ -29,9 +31,11 @@ async function main() {
   });
 
   // Agent 생성
-  const agent = await prisma.agent.create({
-    data: {
-      id: 1,
+  const agent = await prisma.agent.upsert({
+    where: { id: 14425 }, // 추가
+    update: {},
+    create: {
+      id: 14425,
       agentId: 'agent_001',
       secretKey: 'sk_ababe_test_123',
       name: "Lee's Agent",
