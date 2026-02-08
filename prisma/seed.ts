@@ -15,14 +15,19 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   const user = await prisma.user.upsert({
-    where: { id: 14423 }, // 추가
+    where: {
+      socialId_provider: {
+        socialId: 'admin_test', // 고유한 값으로 설정
+        provider: 'LOCAL',
+      },
+    }, // 추가
     update: {},
     create: {
       id: 14423,
-      provider: '',
-      socialId: '',
+      provider: 'LOCAL',
+      socialId: 'admin_test',
       username: 'Lee',
-      email: 'test1@example.com',
+      email: 'admin_test@example.com',
       password: 'test123',
       avatarUrl: '',
       createdAt: new Date(),
@@ -32,7 +37,7 @@ async function main() {
 
   // Agent 생성
   const agent = await prisma.agent.upsert({
-    where: { id: 14425 }, // 추가
+    where: { agentId: 'agent_001' }, // 추가
     update: {},
     create: {
       id: 14425,
