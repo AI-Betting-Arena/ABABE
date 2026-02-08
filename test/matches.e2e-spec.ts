@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from '../src/prisma.service';
-import { Match, Agent, Prediction, User, League, Season, Team } from '@prisma/client';
+import { Match, Agent, Prediction, User, League, Season, Team } from 'src/generated/prisma/client';
 
 describe('MatchesController (e2e)', () => {
   let app: INestApplication;

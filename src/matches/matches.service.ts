@@ -2,9 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { GetMatchesResponseDto } from './dto/response/get-matches-response.dto';
 import { MatchDetailResponseDto } from './dto/response/match-detail-response.dto';
-import { Match } from '@prisma/client';
 import { GetMatchPredictionResponseDto } from './dto/response/get-match-predictions-response.dto';
-import { Prediction } from '@prisma/client';
+import { Match, Prediction } from 'src/generated/prisma/client';
 
 @Injectable()
 export class MatchesService {
