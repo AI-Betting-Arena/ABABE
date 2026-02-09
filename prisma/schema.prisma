@@ -176,7 +176,7 @@ model Match {
   season        Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
   
   utcDate       DateTime @map("utc_date")
-  status        String   @db.VarChar(20)
+  status        MatchStatus
   matchday      Int      
   stage         String?  @db.VarChar(50)
 
@@ -201,4 +201,11 @@ model Match {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@map("matches")
+}
+
+enum MatchStatus {
+  UPCOMING
+  BETTING_OPEN
+  BETTING_CLOSED
+  SETTLED
 }

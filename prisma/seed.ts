@@ -3,6 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
+import { MatchStatus } from '../src/common/constants/match-status.enum'; // Added import
 
 // .env 파일 로드
 dotenv.config();
@@ -72,7 +73,7 @@ async function updateCurrentWeekMatches(prisma: PrismaClient) {
   endDate.setUTCHours(23, 59, 59, 999);
 
   console.log(
-    `Updating matches from ${startDate.toISOString()} to ${endDate.toISOString()} to BETTING_OPEN...`,
+    `Updating matches from ${startDate.toISOString()} to ${endDate.toISOString()} to ${MatchStatus.BETTING_OPEN}...`,
   );
 
   const result = await prisma.match.updateMany({
@@ -81,22 +82,18 @@ async function updateCurrentWeekMatches(prisma: PrismaClient) {
         gte: startDate,
         lte: endDate,
       },
-      status: 'TIMED',
+      status: MatchStatus.UPCOMING, // Changed from 'TIMED'
     },
     data: {
-      status: 'BETTING_OPEN',
+      status: MatchStatus.BETTING_OPEN, // Changed from 'BETTING_OPEN' string
     },
   });
 
-  console.log(`✅ ${result.count} matches updated to BETTING_OPEN.`);
+  console.log(`✅ ${result.count} matches updated to ${MatchStatus.BETTING_OPEN}.`);
 }
 
-/**
- * --- Principle: SRP, YAGNI ---
- * 이 함수는 미래의 경기 데이터를 가져와 DB에 시딩하는 책임만 가짐.
- * 현재 필요하지 않은 복잡한 업데이트 로직은 포함하지 않음.
- */
-async function seedFutureMatches(
+// Renamed from seedFutureMatches to seedMatches to reflect it seeds all relevant weeks
+async function seedMatches(
   prisma: PrismaClient,
   teamMap: Record<number, number>,
   seasonId: number,
@@ -109,11 +106,12 @@ async function seedFutureMatches(
   
   const today = new Date('2026-02-09T00:00:00Z'); // Simulation date
 
-  for (let i = 1; i <= WEEKS_TO_FETCH; i++) {
+  // Loop from 0 to WEEKS_TO_FETCH - 1 to include the current week
+  for (let i = 0; i < WEEKS_TO_FETCH; i++) {
     const dateFrom = new Date(today);
     const dayOfWeek = dateFrom.getUTCDay(); // 0(일) ~ 6(토)
 
-    // i 주 후의 월요일 계산
+    // i 주 후의 월요일 계산 (i=0일 때 오늘이 속한 주간의 월요일이 됨)
     dateFrom.setUTCDate(dateFrom.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) + (i * 7));
     dateFrom.setUTCHours(0, 0, 0, 0);
 
@@ -151,7 +149,7 @@ async function seedFutureMatches(
           apiId: match.id,
           seasonId: seasonId,
           utcDate: new Date(match.utcDate),
-          status: 'UPCOMING',
+          status: MatchStatus.UPCOMING, // Changed from 'UPCOMING' string
           matchday: match.matchday,
           homeTeamId: homeTeamId,
           awayTeamId: awayTeamId,
@@ -392,8 +390,8 @@ async function main() {
   // --- [REMOVED] 하드코딩된 경기 데이터 및 관련 루프 제거 ---
 
   // --- [ADDED] 분리된 함수들을 순서대로 호출 ---
-  await updateCurrentWeekMatches(prisma);
-  await seedFutureMatches(prisma, teamApiIdToInternalId, season.id);
+  await seedMatches(prisma, teamApiIdToInternalId, season.id); // Call seedMatches first
+  await updateCurrentWeekMatches(prisma); // Then call updateCurrentWeekMatches
 
   console.log('\n✅ Seed data script finished successfully!');
 }

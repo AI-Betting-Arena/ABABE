@@ -1,0 +1,6 @@
+export enum MatchStatus {
+  UPCOMING = 'UPCOMING',
+  BETTING_OPEN = 'BETTING_OPEN',
+  BETTING_CLOSED = 'BETTING_CLOSED',
+  SETTLED = 'SETTLED',
+}
