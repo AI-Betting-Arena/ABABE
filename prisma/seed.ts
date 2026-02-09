@@ -2,9 +2,17 @@ import { PrismaClient } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as dotenv from 'dotenv';
+import axios from 'axios';
 
 // .env 파일 로드
 dotenv.config();
+
+// --- Principle: Fail-fast. 환경 변수 존재 여부 확인 ---
+if (!process.env.FOOTBALL_DATA_API_TOKEN) {
+  throw new Error(
+    'FATAL: FOOTBALL_DATA_API_TOKEN is not defined in the .env file.',
+  );
+}
 
 // 1. pg Pool 생성
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -13,44 +21,188 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+const API_TOKEN = process.env.FOOTBALL_DATA_API_TOKEN;
+const API_BASE_URL = 'https://api.football-data.org/v4';
+const PREMIER_LEAGUE_ID = 2021;
+
+interface MatchApiResponse {
+  matches: any[];
+}
+
+/**
+ * --- Principle: SRP (Single Responsibility Principle) ---
+ * 이 함수는 오직 API로부터 경기 데이터를 가져오는 책임만 가짐.
+ * 모킹이 용이해져 테스트하기 좋은 구조가 됨.
+ */
+async function fetchMatchesFromApi(dateFrom: string, dateTo: string) {
+  try {
+    const response = await axios.get<MatchApiResponse>(
+      `${API_BASE_URL}/matches?competitions=${PREMIER_LEAGUE_ID}&dateFrom=${dateFrom}&dateTo=${dateTo}`,
+      {
+        headers: { 'X-Auth-Token': API_TOKEN },
+      },
+    );
+    return response.data.matches;
+  } catch (error) {
+    console.error(
+      `Error fetching matches from ${dateFrom} to ${dateTo}:`,
+      error.response?.data || error.message,
+    );
+    return []; // 에러 발생 시 빈 배열 반환하여 다음 작업에 영향 최소화
+  }
+}
+
+/**
+ * --- Principle: SRP ---
+ * 이 함수는 현재 주의 경기 상태를 업데이트하는 책임만 가짐.
+ */
+async function updateCurrentWeekMatches(prisma: PrismaClient) {
+  // 시뮬레이션 기준일: 2026년 2월 9일 월요일
+  const today = new Date('2026-02-09T00:00:00Z');
+  const dayOfWeek = today.getUTCDay(); // 0(일) ~ 6(토)
+
+  // 이번 주 월요일 (UTC 00:00:00)
+  const startDate = new Date(today);
+  startDate.setUTCDate(today.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  startDate.setUTCHours(0, 0, 0, 0);
+
+  // 이번 주 일요일 (UTC 23:59:59)
+  const endDate = new Date(startDate);
+  endDate.setUTCDate(startDate.getUTCDate() + 6);
+  endDate.setUTCHours(23, 59, 59, 999);
+
+  console.log(
+    `Updating matches from ${startDate.toISOString()} to ${endDate.toISOString()} to BETTING_OPEN...`,
+  );
+
+  const result = await prisma.match.updateMany({
+    where: {
+      utcDate: {
+        gte: startDate,
+        lte: endDate,
+      },
+      status: 'TIMED',
+    },
+    data: {
+      status: 'BETTING_OPEN',
+    },
+  });
+
+  console.log(`✅ ${result.count} matches updated to BETTING_OPEN.`);
+}
+
+/**
+ * --- Principle: SRP, YAGNI ---
+ * 이 함수는 미래의 경기 데이터를 가져와 DB에 시딩하는 책임만 가짐.
+ * 현재 필요하지 않은 복잡한 업데이트 로직은 포함하지 않음.
+ */
+async function seedFutureMatches(
+  prisma: PrismaClient,
+  teamMap: Record<number, number>,
+  seasonId: number,
+) {
+  const WEEKS_TO_FETCH = 10;
+  // API Rate Limit(분당 10회) 준수를 위한 딜레이 (6초)
+  const API_DELAY_MS = 6000;
+
+  console.log(`Fetching next ${WEEKS_TO_FETCH} weeks of matches...`);
+  
+  const today = new Date('2026-02-09T00:00:00Z'); // Simulation date
+
+  for (let i = 1; i <= WEEKS_TO_FETCH; i++) {
+    const dateFrom = new Date(today);
+    const dayOfWeek = dateFrom.getUTCDay(); // 0(일) ~ 6(토)
+
+    // i 주 후의 월요일 계산
+    dateFrom.setUTCDate(dateFrom.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) + (i * 7));
+    dateFrom.setUTCHours(0, 0, 0, 0);
+
+    const dateTo = new Date(dateFrom);
+    dateTo.setUTCDate(dateFrom.getUTCDate() + 6);
+    dateTo.setUTCHours(23, 59, 59, 999);
+
+    const dateFromString = dateFrom.toISOString().split('T')[0];
+    const dateToString = dateTo.toISOString().split('T')[0];
+
+    console.log(`\n[Week ${i}] Fetching from ${dateFromString} to ${dateToString}...`);
+
+    const matches = await fetchMatchesFromApi(dateFromString, dateToString);
+
+    if (!matches || matches.length === 0) {
+      console.log(`No matches found for week ${i}.`);
+      continue;
+    }
+
+    for (const match of matches) {
+      const homeTeamId = teamMap[match.homeTeam.id];
+      const awayTeamId = teamMap[match.awayTeam.id];
+
+      // 팀 정보가 DB에 없는 경우 건너뛰기
+      if (!homeTeamId || !awayTeamId) {
+        console.warn(
+          `Skipping match ID ${match.id}: Team not found in DB (Home: ${match.homeTeam.id}, Away: ${match.awayTeam.id})`,
+        );
+        continue;
+      }
+
+      await prisma.match.upsert({
+        where: { apiId: match.id },
+        create: {
+          apiId: match.id,
+          seasonId: seasonId,
+          utcDate: new Date(match.utcDate),
+          status: 'UPCOMING',
+          matchday: match.matchday,
+          homeTeamId: homeTeamId,
+          awayTeamId: awayTeamId,
+          stage: match.stage,
+        },
+        update: {
+          utcDate: new Date(match.utcDate),
+          matchday: match.matchday,
+        },
+      });
+    }
+    console.log(`   -> ${matches.length} matches upserted for week ${i}.`);
+
+    // --- Principle: API Rate Limiting 준수 ---
+    if (i < WEEKS_TO_FETCH) {
+      console.log(`   Waiting ${API_DELAY_MS / 1000} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, API_DELAY_MS));
+    }
+  }
+}
+
 async function main() {
+  console.log('🚀 Starting seed script...');
+  // --- 기존의 유저, 에이전트, 리그, 시즌, 팀 시딩 로직은 유지 ---
   const user = await prisma.user.upsert({
     where: {
-      socialId_provider: {
-        socialId: 'admin_test', // 고유한 값으로 설정
-        provider: 'LOCAL',
-      },
-    }, // 추가
+      socialId_provider: { socialId: 'admin_test', provider: 'LOCAL' },
+    },
     update: {},
     create: {
-      id: 14423,
       provider: 'LOCAL',
       socialId: 'admin_test',
       username: 'Lee',
       email: 'admin_test@example.com',
       password: 'test123',
       avatarUrl: '',
-      createdAt: new Date(),
-      updatedAt: new Date(),
     },
   });
 
-  // Agent 생성
-  const agent = await prisma.agent.upsert({
-    where: { agentId: 'agent_001' }, // 추가
+  await prisma.agent.upsert({
+    where: { agentId: 'agent_001' },
     update: {},
     create: {
-      id: 14425,
       agentId: 'agent_001',
       secretKey: 'sk_ababe_test_123',
       name: "Lee's Agent",
       balance: 1000,
       userId: user.id,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     },
   });
-  // 1. 리그 생성
+
   const league = await prisma.league.upsert({
     where: { apiId: 2021 },
     update: {},
@@ -65,7 +217,6 @@ async function main() {
     },
   });
 
-  // 2. 시즌 생성
   const season = await prisma.season.upsert({
     where: { apiId: 2403 },
     update: {},
@@ -77,7 +228,6 @@ async function main() {
     },
   });
 
-  // 3. 팀 데이터 (필요한 팀들 전부 추가)
   const teamsData = [
     {
       apiId: 73,
@@ -221,9 +371,8 @@ async function main() {
     },
   ];
 
-  // 팀 정보 먼저 DB에 넣고 맵핑 정보 보관
   const teamApiIdToInternalId: Record<number, number> = {};
-
+  console.log('Seeding teams...');
   for (const teamData of teamsData) {
     const team = await prisma.team.upsert({
       where: { apiId: teamData.apiId },
@@ -232,110 +381,28 @@ async function main() {
     });
     teamApiIdToInternalId[teamData.apiId] = team.id;
 
-    // SeasonTeam 연결
     await prisma.seasonTeam.upsert({
       where: { seasonId_teamId: { seasonId: season.id, teamId: team.id } },
       update: {},
       create: { seasonId: season.id, teamId: team.id },
     });
   }
+  console.log('✅ Teams seeded.');
 
-  // 4. 경기 데이터
-  const matchesData = [
-    {
-      apiId: 538043,
-      date: '2026-02-10T19:30:00Z',
-      homeId: 73,
-      awayId: 67,
-      day: 26,
-    },
-    {
-      apiId: 538039,
-      date: '2026-02-10T19:30:00Z',
-      homeId: 61,
-      awayId: 341,
-      day: 26,
-    },
-    {
-      apiId: 538040,
-      date: '2026-02-10T19:30:00Z',
-      homeId: 62,
-      awayId: 1044,
-      day: 26,
-    },
-    {
-      apiId: 538044,
-      date: '2026-02-10T20:15:00Z',
-      homeId: 563,
-      awayId: 66,
-      day: 26,
-    },
-    {
-      apiId: 538041,
-      date: '2026-02-11T19:30:00Z',
-      homeId: 65,
-      awayId: 63,
-      day: 26,
-    },
-    {
-      apiId: 538037,
-      date: '2026-02-11T19:30:00Z',
-      homeId: 354,
-      awayId: 328,
-      day: 26,
-    },
-    {
-      apiId: 538036,
-      date: '2026-02-11T19:30:00Z',
-      homeId: 58,
-      awayId: 397,
-      day: 26,
-    },
-    {
-      apiId: 538042,
-      date: '2026-02-11T19:30:00Z',
-      homeId: 351,
-      awayId: 76,
-      day: 26,
-    },
-    {
-      apiId: 538035,
-      date: '2026-02-11T20:15:00Z',
-      homeId: 71,
-      awayId: 64,
-      day: 26,
-    },
-    {
-      apiId: 538038,
-      date: '2026-02-12T20:00:00Z',
-      homeId: 402,
-      awayId: 57,
-      day: 26,
-    },
-  ];
+  // --- [REMOVED] 하드코딩된 경기 데이터 및 관련 루프 제거 ---
 
-  for (const match of matchesData) {
-    await prisma.match.upsert({
-      where: { apiId: match.apiId },
-      update: {
-        utcDate: new Date(match.date),
-      },
-      create: {
-        apiId: match.apiId,
-        seasonId: season.id,
-        utcDate: new Date(match.date),
-        status: 'TIMED',
-        matchday: match.day,
-        // 💡 connect 대신 조회한 실제 id를 직접 할당하는 방식 (타입 에러 회피)
-        homeTeamId: teamApiIdToInternalId[match.homeId],
-        awayTeamId: teamApiIdToInternalId[match.awayId],
-      },
-    });
-  }
+  // --- [ADDED] 분리된 함수들을 순서대로 호출 ---
+  await updateCurrentWeekMatches(prisma);
+  await seedFutureMatches(prisma, teamApiIdToInternalId, season.id);
 
-  console.log('✅ Seed data inserted successfully!');
+  console.log('\n✅ Seed data script finished successfully!');
 }
 
 main()
-  .catch((e) => console.error(e))
-  .finally(async () => await prisma.$disconnect());
+  .catch((e) => {
+    console.error('❌ An error occurred during the seed script:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
