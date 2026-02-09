@@ -13,7 +13,7 @@ import { AgentsService } from 'src/agents/agents.service';
 @Injectable()
 export class McpService implements OnModuleDestroy {
   private server: Server;
-  // SSE는 여러 연결이 들어올 수 있으므로 transport를 관리할 필요가 있음
+  // SSE can have multiple connections, so it's necessary to manage the transport.
   private transport: SSEServerTransport | null = null;
 
   constructor(
@@ -36,11 +36,11 @@ export class McpService implements OnModuleDestroy {
 
   // 1. SSE 연결 핸들러
   async handleSse(req: Request, res: Response) {
-    // "/mcp/messages"는 나중에 메시지를 보낼 엔드포인트 주소야
+    // "/mcp/messages" is the endpoint address to send messages later.
     this.transport = new SSEServerTransport('/api/v1/mcp/messages', res);
     await this.server.connect(this.transport);
 
-    // 연결이 끊겼을 때 처리
+    // Handle when the connection is lost.
     req.on('close', () => {
       this.transport = null;
     });
@@ -56,11 +56,11 @@ export class McpService implements OnModuleDestroy {
     }
 
     try {
-      // 💡 SSE 트랜스포트가 POST 요청을 처리하도록 함
+      // 💡 Allow SSE transport to handle POST requests.
       await this.transport.handlePostMessage(req, res);
     } catch (error) {
       console.error('MCP Message Error:', error);
-      // 💡 에러 발생 시 스트림 상태를 초기화하거나 에러 응답을 명확히 함
+      // 💡 Initialize stream state or clarify error response when an error occurs.
       if (!res.headersSent) {
         res
           .status(500)
@@ -70,27 +70,27 @@ export class McpService implements OnModuleDestroy {
   }
 
   private setupHandlers() {
-    // AI에게 제공할 도구 리스트
+    // List of tools to provide to the AI.
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: [
           {
             name: 'get_weekly_matches',
-            description: '특정 날짜 범위의 EPL 경기 일정과 정보를 조회합니다.',
+            description: 'Retrieves EPL match schedules and information for a specific date range.',
             inputSchema: {
               type: 'object',
               properties: {
-                from: { type: 'string', description: '시작 날짜 (YYYY-MM-DD)' },
-                to: { type: 'string', description: '종료 날짜 (YYYY-MM-DD)' },
+                from: { type: 'string', description: 'Start date (YYYY-MM-DD)' },
+                to: { type: 'string', description: 'End date (YYYY-MM-DD)' },
               },
               required: ['from', 'to'],
             },
           },
-          // src/mcp/mcp.service.ts 내 setupHandlers의 place_bet 부분
+          // place_bet section in setupHandlers within src/mcp/mcp.service.ts
 
           {
             name: 'place_bet',
-            description: 'AI 에이전트가 분석 리포트와 함께 베팅을 진행합니다.',
+            description: 'The AI agent places a bet along with an analysis report.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -106,21 +106,21 @@ export class McpService implements OnModuleDestroy {
                   type: 'number',
                   minimum: 0,
                   maximum: 100,
-                  description: '예측 신뢰도(0-100)',
+                  description: 'Prediction confidence (0-100)',
                 },
                 reason: {
                   type: 'string',
-                  description: '상세 분석 내용 (Markdown 가능)',
+                  description: 'Detailed analysis content (Markdown supported)',
                 },
                 keyPoints: {
                   type: 'array',
                   items: { type: 'string' },
-                  description: '핵심 분석 포인트 3가지',
+                  description: 'Three key analysis points',
                 },
                 analysisStats: {
                   type: 'object',
                   description:
-                    '예측 근거 통계 (ex: { "homeWinRate": 60, "avgGoals": 2.5 })',
+                    'Prediction basis statistics (e.g., { "homeWinRate": 60, "avgGoals": 2.5 })',
                 },
               },
               required: [
@@ -135,10 +135,10 @@ export class McpService implements OnModuleDestroy {
               ],
             },
           },
-          // AI 에이전트의 현재 베팅 포인트를 조회하는 도구
+          // Tool to inquire about the AI agent's current betting points.
           {
             name: 'get_betting_points',
-            description: 'AI 에이전트가 자신의 현재 베팅 포인트를 조회합니다.',
+            description: 'The AI agent inquires about its current betting points.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -152,7 +152,7 @@ export class McpService implements OnModuleDestroy {
       };
     });
 
-    // 도구 실행 로직
+    // Tool execution logic.
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
 
@@ -167,20 +167,20 @@ export class McpService implements OnModuleDestroy {
 
       if (name === 'place_bet') {
         try {
-          // 가독성을 위해 별도의 AgentsService에서 처리하는 걸 권장해!
+          // It is recommended to handle this in a separate AgentsService for readability.
           const result = await this.agentsService.processBet(args as any);
 
           return {
             content: [
               {
                 type: 'text',
-                text: `✅ 베팅 완료! 에이전트: ${result.agentName}, 소모 포인트: ${args?.['betAmount'] ?? 'N/A'}, 잔액: ${result.remainingBalance}`,
+                text: `✅ Betting complete! Agent: ${result.agentName}, Points spent: ${args?.['betAmount'] ?? 'N/A'}, Remaining balance: ${result.remainingBalance}`,
               },
             ],
           };
         } catch (error) {
           return {
-            content: [{ type: 'text', text: `❌ 베팅 실패: ${error.message}` }],
+            content: [{ type: 'text', text: `❌ Betting failed: ${error.message}` }],
             isError: true,
           };
         }
@@ -194,13 +194,13 @@ export class McpService implements OnModuleDestroy {
             content: [
               {
                 type: 'text',
-                text: `✅ 현재 베팅 가능 포인트: ${balance}`,
+                text: `✅ Current available betting points: ${balance}`,
               },
             ],
           };
         } catch (error) {
           return {
-            content: [{ type: 'text', text: `❌ 베팅 포인트 조회 실패: ${error.message}` }],
+            content: [{ type: 'text', text: `❌ Failed to retrieve betting points: ${error.message}` }],
             isError: true,
           };
         }
