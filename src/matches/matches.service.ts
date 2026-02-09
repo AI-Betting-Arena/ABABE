@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { Match, Prediction } from 'src/generated/prisma/client';
+import { Match, Prediction, Prisma } from 'src/generated/prisma/client'; // Add Prisma for Decimal type
 import { LeagueMatchesDto } from './dto/response/league-matches.dto';
 // MatchDetailDto is used by the new findMatches method
 import { MatchDetailDto } from './dto/response/match-detail.dto';
 // MatchDetailResponseDto is used by the old getMatchById method
 import { MatchDetailResponseDto } from './dto/response/match-detail-response.dto';
 import { GetMatchPredictionResponseDto } from './dto/response/get-match-predictions-response.dto';
+
+// Define virtual seed pools for odds calculation to ensure balance and prevent division by zero.
+const VIRTUAL_HOME_AWAY_POOL = new Prisma.Decimal(1000);
+const VIRTUAL_DRAW_POOL = new Prisma.Decimal(800);
 
 @Injectable()
 export class MatchesService {
@@ -58,18 +62,10 @@ export class MatchesService {
           awayTeamEmblemUrl: match.awayTeam.crest,
           startTime: match.utcDate,
           status: match.status,
-          oddsHome:
-            match.poolHome.toNumber() > 0
-              ? parseFloat((totalPool / match.poolHome.toNumber()).toFixed(2))
-              : 0,
-          oddsDraw:
-            match.poolDraw.toNumber() > 0
-              ? parseFloat((totalPool / match.poolDraw.toNumber()).toFixed(2))
-              : 0,
-          oddsAway:
-            match.poolAway.toNumber() > 0
-              ? parseFloat((totalPool / match.poolAway.toNumber()).toFixed(2))
-              : 0,
+          // Use stored odds from the match object
+          oddsHome: match.oddsHome.toNumber(),
+          oddsDraw: match.oddsDraw.toNumber(),
+          oddsAway: match.oddsAway.toNumber(),
           agentCount: match.predictions.length, // Use actual count of predictions
         };
 
@@ -196,6 +192,80 @@ export class MatchesService {
       status: p.status as 'PENDING' | 'SUCCESS' | 'FAIL',
       createdAt: p.createdAt,
     }));
+  }
+
+  /**
+   * Calculates and sets the betting odds for a given match.
+   * Updates the betting pools and recalculates the odds based on the new bet.
+   * Includes a virtual pool mechanism to prevent division by zero when a pool is empty.
+   *
+   * @param matchId The ID of the match.
+   * @param betAmount The amount of the bet.
+   * @param betType The type of bet ('HOME_TEAM', 'DRAW', or 'AWAY_TEAM').
+   * @returns An object containing the calculated odds for home, draw, and away.
+   */
+  async calculateAndSetOdds(
+    matchId: number,
+    betAmount: Prisma.Decimal,
+    betType: 'HOME_TEAM' | 'DRAW' | 'AWAY_TEAM',
+  ): Promise<{ oddsHome: Prisma.Decimal; oddsDraw: Prisma.Decimal; oddsAway: Prisma.Decimal }> {
+    const match = await this.prisma.match.findUnique({
+      where: { id: matchId },
+    });
+
+    if (!match) {
+      throw new NotFoundException(`Match with ID ${matchId} not found`);
+    }
+
+    // Update the actual pool based on the new bet
+    let updatedPoolHome = match.poolHome;
+    let updatedPoolDraw = match.poolDraw;
+    let updatedPoolAway = match.poolAway;
+
+    switch (betType) {
+      case 'HOME_TEAM':
+        updatedPoolHome = match.poolHome.plus(betAmount);
+        break;
+      case 'DRAW':
+        updatedPoolDraw = match.poolDraw.plus(betAmount);
+        break;
+      case 'AWAY_TEAM':
+        updatedPoolAway = match.poolAway.plus(betAmount);
+        break;
+      default:
+        throw new Error('Invalid bet type');
+    }
+
+    // --- Core Logic Change: Always add virtual seed pool for calculation ---
+    const effectivePoolHome = updatedPoolHome.plus(VIRTUAL_HOME_AWAY_POOL);
+    const effectivePoolDraw = updatedPoolDraw.plus(VIRTUAL_DRAW_POOL);
+    const effectivePoolAway = updatedPoolAway.plus(VIRTUAL_HOME_AWAY_POOL);
+
+    // Calculate total effective pool
+    const totalEffectivePool = effectivePoolHome.plus(effectivePoolDraw).plus(effectivePoolAway);
+
+    // Commission (10%)
+    const commissionMultiplier = new Prisma.Decimal(0.9);
+
+    // Calculate new odds based on the effective pools
+    const newOddsHome = totalEffectivePool.times(commissionMultiplier).dividedBy(effectivePoolHome).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const newOddsDraw = totalEffectivePool.times(commissionMultiplier).dividedBy(effectivePoolDraw).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const newOddsAway = totalEffectivePool.times(commissionMultiplier).dividedBy(effectivePoolAway).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+
+    // Update the match with the REAL new pools and calculated odds
+    await this.prisma.match.update({
+      where: { id: matchId },
+      data: {
+        poolHome: updatedPoolHome,
+        poolDraw: updatedPoolDraw,
+        poolAway: updatedPoolAway,
+        oddsHome: newOddsHome,
+        oddsDraw: newOddsDraw,
+        oddsAway: newOddsAway,
+      },
+    });
+
+    return { oddsHome: newOddsHome, oddsDraw: newOddsDraw, oddsAway: newOddsAway };
   }
 }
 

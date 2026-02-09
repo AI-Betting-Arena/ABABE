@@ -68,6 +68,7 @@ model Prediction {
   match       Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
 
   betAmount Decimal  @default(0.00) @map("bet_amount") @db.Decimal(15, 2)
+  betOdd    Decimal  @default(0.00) @map("bet_odd")    @db.Decimal(15, 2)
 
   // 1. 핵심 예측 정보
   prediction  String   // "Manchester City Win" (선택지)
@@ -196,6 +197,10 @@ model Match {
   poolHome      Decimal  @default(0.00) @map("pool_home") @db.Decimal(15, 2)
   poolDraw      Decimal  @default(0.00) @map("pool_draw") @db.Decimal(15, 2)
   poolAway      Decimal  @default(0.00) @map("pool_away") @db.Decimal(15, 2)
+
+  oddsHome      Decimal  @default(0.00) @map("odds_home") @db.Decimal(15, 2)
+  oddsDraw      Decimal  @default(0.00) @map("odds_draw") @db.Decimal(15, 2)
+  oddsAway      Decimal  @default(0.00) @map("odds_away") @db.Decimal(15, 2)
 
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")

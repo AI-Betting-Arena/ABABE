@@ -38,6 +38,9 @@ export type MatchAvgAggregateOutputType = {
   poolHome: runtime.Decimal | null
   poolDraw: runtime.Decimal | null
   poolAway: runtime.Decimal | null
+  oddsHome: runtime.Decimal | null
+  oddsDraw: runtime.Decimal | null
+  oddsAway: runtime.Decimal | null
 }
 
 export type MatchSumAggregateOutputType = {
@@ -52,6 +55,9 @@ export type MatchSumAggregateOutputType = {
   poolHome: runtime.Decimal | null
   poolDraw: runtime.Decimal | null
   poolAway: runtime.Decimal | null
+  oddsHome: runtime.Decimal | null
+  oddsDraw: runtime.Decimal | null
+  oddsAway: runtime.Decimal | null
 }
 
 export type MatchMinAggregateOutputType = {
@@ -59,7 +65,7 @@ export type MatchMinAggregateOutputType = {
   apiId: number | null
   seasonId: number | null
   utcDate: Date | null
-  status: string | null
+  status: $Enums.MatchStatus | null
   matchday: number | null
   stage: string | null
   homeTeamId: number | null
@@ -70,6 +76,9 @@ export type MatchMinAggregateOutputType = {
   poolHome: runtime.Decimal | null
   poolDraw: runtime.Decimal | null
   poolAway: runtime.Decimal | null
+  oddsHome: runtime.Decimal | null
+  oddsDraw: runtime.Decimal | null
+  oddsAway: runtime.Decimal | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -79,7 +88,7 @@ export type MatchMaxAggregateOutputType = {
   apiId: number | null
   seasonId: number | null
   utcDate: Date | null
-  status: string | null
+  status: $Enums.MatchStatus | null
   matchday: number | null
   stage: string | null
   homeTeamId: number | null
@@ -90,6 +99,9 @@ export type MatchMaxAggregateOutputType = {
   poolHome: runtime.Decimal | null
   poolDraw: runtime.Decimal | null
   poolAway: runtime.Decimal | null
+  oddsHome: runtime.Decimal | null
+  oddsDraw: runtime.Decimal | null
+  oddsAway: runtime.Decimal | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -110,6 +122,9 @@ export type MatchCountAggregateOutputType = {
   poolHome: number
   poolDraw: number
   poolAway: number
+  oddsHome: number
+  oddsDraw: number
+  oddsAway: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -128,6 +143,9 @@ export type MatchAvgAggregateInputType = {
   poolHome?: true
   poolDraw?: true
   poolAway?: true
+  oddsHome?: true
+  oddsDraw?: true
+  oddsAway?: true
 }
 
 export type MatchSumAggregateInputType = {
@@ -142,6 +160,9 @@ export type MatchSumAggregateInputType = {
   poolHome?: true
   poolDraw?: true
   poolAway?: true
+  oddsHome?: true
+  oddsDraw?: true
+  oddsAway?: true
 }
 
 export type MatchMinAggregateInputType = {
@@ -160,6 +181,9 @@ export type MatchMinAggregateInputType = {
   poolHome?: true
   poolDraw?: true
   poolAway?: true
+  oddsHome?: true
+  oddsDraw?: true
+  oddsAway?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -180,6 +204,9 @@ export type MatchMaxAggregateInputType = {
   poolHome?: true
   poolDraw?: true
   poolAway?: true
+  oddsHome?: true
+  oddsDraw?: true
+  oddsAway?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -200,6 +227,9 @@ export type MatchCountAggregateInputType = {
   poolHome?: true
   poolDraw?: true
   poolAway?: true
+  oddsHome?: true
+  oddsDraw?: true
+  oddsAway?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -296,7 +326,7 @@ export type MatchGroupByOutputType = {
   apiId: number
   seasonId: number
   utcDate: Date
-  status: string
+  status: $Enums.MatchStatus
   matchday: number
   stage: string | null
   homeTeamId: number
@@ -307,6 +337,9 @@ export type MatchGroupByOutputType = {
   poolHome: runtime.Decimal
   poolDraw: runtime.Decimal
   poolAway: runtime.Decimal
+  oddsHome: runtime.Decimal
+  oddsDraw: runtime.Decimal
+  oddsAway: runtime.Decimal
   createdAt: Date
   updatedAt: Date
   _count: MatchCountAggregateOutputType | null
@@ -339,7 +372,7 @@ export type MatchWhereInput = {
   apiId?: Prisma.IntFilter<"Match"> | number
   seasonId?: Prisma.IntFilter<"Match"> | number
   utcDate?: Prisma.DateTimeFilter<"Match"> | Date | string
-  status?: Prisma.StringFilter<"Match"> | string
+  status?: Prisma.EnumMatchStatusFilter<"Match"> | $Enums.MatchStatus
   matchday?: Prisma.IntFilter<"Match"> | number
   stage?: Prisma.StringNullableFilter<"Match"> | string | null
   homeTeamId?: Prisma.IntFilter<"Match"> | number
@@ -350,6 +383,9 @@ export type MatchWhereInput = {
   poolHome?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFilter<"Match"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Match"> | Date | string
   season?: Prisma.XOR<Prisma.SeasonScalarRelationFilter, Prisma.SeasonWhereInput>
@@ -374,6 +410,9 @@ export type MatchOrderByWithRelationInput = {
   poolHome?: Prisma.SortOrder
   poolDraw?: Prisma.SortOrder
   poolAway?: Prisma.SortOrder
+  oddsHome?: Prisma.SortOrder
+  oddsDraw?: Prisma.SortOrder
+  oddsAway?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   season?: Prisma.SeasonOrderByWithRelationInput
@@ -390,7 +429,7 @@ export type MatchWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.MatchWhereInput | Prisma.MatchWhereInput[]
   seasonId?: Prisma.IntFilter<"Match"> | number
   utcDate?: Prisma.DateTimeFilter<"Match"> | Date | string
-  status?: Prisma.StringFilter<"Match"> | string
+  status?: Prisma.EnumMatchStatusFilter<"Match"> | $Enums.MatchStatus
   matchday?: Prisma.IntFilter<"Match"> | number
   stage?: Prisma.StringNullableFilter<"Match"> | string | null
   homeTeamId?: Prisma.IntFilter<"Match"> | number
@@ -401,6 +440,9 @@ export type MatchWhereUniqueInput = Prisma.AtLeast<{
   poolHome?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFilter<"Match"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Match"> | Date | string
   season?: Prisma.XOR<Prisma.SeasonScalarRelationFilter, Prisma.SeasonWhereInput>
@@ -425,6 +467,9 @@ export type MatchOrderByWithAggregationInput = {
   poolHome?: Prisma.SortOrder
   poolDraw?: Prisma.SortOrder
   poolAway?: Prisma.SortOrder
+  oddsHome?: Prisma.SortOrder
+  oddsDraw?: Prisma.SortOrder
+  oddsAway?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.MatchCountOrderByAggregateInput
@@ -442,7 +487,7 @@ export type MatchScalarWhereWithAggregatesInput = {
   apiId?: Prisma.IntWithAggregatesFilter<"Match"> | number
   seasonId?: Prisma.IntWithAggregatesFilter<"Match"> | number
   utcDate?: Prisma.DateTimeWithAggregatesFilter<"Match"> | Date | string
-  status?: Prisma.StringWithAggregatesFilter<"Match"> | string
+  status?: Prisma.EnumMatchStatusWithAggregatesFilter<"Match"> | $Enums.MatchStatus
   matchday?: Prisma.IntWithAggregatesFilter<"Match"> | number
   stage?: Prisma.StringNullableWithAggregatesFilter<"Match"> | string | null
   homeTeamId?: Prisma.IntWithAggregatesFilter<"Match"> | number
@@ -453,6 +498,9 @@ export type MatchScalarWhereWithAggregatesInput = {
   poolHome?: Prisma.DecimalWithAggregatesFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalWithAggregatesFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalWithAggregatesFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalWithAggregatesFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalWithAggregatesFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalWithAggregatesFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Match"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Match"> | Date | string
 }
@@ -460,7 +508,7 @@ export type MatchScalarWhereWithAggregatesInput = {
 export type MatchCreateInput = {
   apiId: number
   utcDate: Date | string
-  status: string
+  status: $Enums.MatchStatus
   matchday: number
   stage?: string | null
   winner?: string | null
@@ -469,6 +517,9 @@ export type MatchCreateInput = {
   poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
   season: Prisma.SeasonCreateNestedOneWithoutMatchesInput
@@ -482,7 +533,7 @@ export type MatchUncheckedCreateInput = {
   apiId: number
   seasonId: number
   utcDate: Date | string
-  status: string
+  status: $Enums.MatchStatus
   matchday: number
   stage?: string | null
   homeTeamId: number
@@ -493,6 +544,9 @@ export type MatchUncheckedCreateInput = {
   poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
   predictions?: Prisma.PredictionUncheckedCreateNestedManyWithoutMatchInput
@@ -501,7 +555,7 @@ export type MatchUncheckedCreateInput = {
 export type MatchUpdateInput = {
   apiId?: Prisma.IntFieldUpdateOperationsInput | number
   utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   matchday?: Prisma.IntFieldUpdateOperationsInput | number
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   winner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -510,6 +564,9 @@ export type MatchUpdateInput = {
   poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   season?: Prisma.SeasonUpdateOneRequiredWithoutMatchesNestedInput
@@ -523,7 +580,7 @@ export type MatchUncheckedUpdateInput = {
   apiId?: Prisma.IntFieldUpdateOperationsInput | number
   seasonId?: Prisma.IntFieldUpdateOperationsInput | number
   utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   matchday?: Prisma.IntFieldUpdateOperationsInput | number
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   homeTeamId?: Prisma.IntFieldUpdateOperationsInput | number
@@ -534,6 +591,9 @@ export type MatchUncheckedUpdateInput = {
   poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   predictions?: Prisma.PredictionUncheckedUpdateManyWithoutMatchNestedInput
@@ -544,7 +604,7 @@ export type MatchCreateManyInput = {
   apiId: number
   seasonId: number
   utcDate: Date | string
-  status: string
+  status: $Enums.MatchStatus
   matchday: number
   stage?: string | null
   homeTeamId: number
@@ -555,6 +615,9 @@ export type MatchCreateManyInput = {
   poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -562,7 +625,7 @@ export type MatchCreateManyInput = {
 export type MatchUpdateManyMutationInput = {
   apiId?: Prisma.IntFieldUpdateOperationsInput | number
   utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   matchday?: Prisma.IntFieldUpdateOperationsInput | number
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   winner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -571,6 +634,9 @@ export type MatchUpdateManyMutationInput = {
   poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -580,7 +646,7 @@ export type MatchUncheckedUpdateManyInput = {
   apiId?: Prisma.IntFieldUpdateOperationsInput | number
   seasonId?: Prisma.IntFieldUpdateOperationsInput | number
   utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   matchday?: Prisma.IntFieldUpdateOperationsInput | number
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   homeTeamId?: Prisma.IntFieldUpdateOperationsInput | number
@@ -591,6 +657,9 @@ export type MatchUncheckedUpdateManyInput = {
   poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -626,6 +695,9 @@ export type MatchCountOrderByAggregateInput = {
   poolHome?: Prisma.SortOrder
   poolDraw?: Prisma.SortOrder
   poolAway?: Prisma.SortOrder
+  oddsHome?: Prisma.SortOrder
+  oddsDraw?: Prisma.SortOrder
+  oddsAway?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -642,6 +714,9 @@ export type MatchAvgOrderByAggregateInput = {
   poolHome?: Prisma.SortOrder
   poolDraw?: Prisma.SortOrder
   poolAway?: Prisma.SortOrder
+  oddsHome?: Prisma.SortOrder
+  oddsDraw?: Prisma.SortOrder
+  oddsAway?: Prisma.SortOrder
 }
 
 export type MatchMaxOrderByAggregateInput = {
@@ -660,6 +735,9 @@ export type MatchMaxOrderByAggregateInput = {
   poolHome?: Prisma.SortOrder
   poolDraw?: Prisma.SortOrder
   poolAway?: Prisma.SortOrder
+  oddsHome?: Prisma.SortOrder
+  oddsDraw?: Prisma.SortOrder
+  oddsAway?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -680,6 +758,9 @@ export type MatchMinOrderByAggregateInput = {
   poolHome?: Prisma.SortOrder
   poolDraw?: Prisma.SortOrder
   poolAway?: Prisma.SortOrder
+  oddsHome?: Prisma.SortOrder
+  oddsDraw?: Prisma.SortOrder
+  oddsAway?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -696,6 +777,9 @@ export type MatchSumOrderByAggregateInput = {
   poolHome?: Prisma.SortOrder
   poolDraw?: Prisma.SortOrder
   poolAway?: Prisma.SortOrder
+  oddsHome?: Prisma.SortOrder
+  oddsDraw?: Prisma.SortOrder
+  oddsAway?: Prisma.SortOrder
 }
 
 export type MatchCreateNestedOneWithoutPredictionsInput = {
@@ -838,6 +922,10 @@ export type MatchUncheckedUpdateManyWithoutAwayTeamNestedInput = {
   deleteMany?: Prisma.MatchScalarWhereInput | Prisma.MatchScalarWhereInput[]
 }
 
+export type EnumMatchStatusFieldUpdateOperationsInput = {
+  set?: $Enums.MatchStatus
+}
+
 export type NullableIntFieldUpdateOperationsInput = {
   set?: number | null
   increment?: number
@@ -849,7 +937,7 @@ export type NullableIntFieldUpdateOperationsInput = {
 export type MatchCreateWithoutPredictionsInput = {
   apiId: number
   utcDate: Date | string
-  status: string
+  status: $Enums.MatchStatus
   matchday: number
   stage?: string | null
   winner?: string | null
@@ -858,6 +946,9 @@ export type MatchCreateWithoutPredictionsInput = {
   poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
   season: Prisma.SeasonCreateNestedOneWithoutMatchesInput
@@ -870,7 +961,7 @@ export type MatchUncheckedCreateWithoutPredictionsInput = {
   apiId: number
   seasonId: number
   utcDate: Date | string
-  status: string
+  status: $Enums.MatchStatus
   matchday: number
   stage?: string | null
   homeTeamId: number
@@ -881,6 +972,9 @@ export type MatchUncheckedCreateWithoutPredictionsInput = {
   poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -904,7 +998,7 @@ export type MatchUpdateToOneWithWhereWithoutPredictionsInput = {
 export type MatchUpdateWithoutPredictionsInput = {
   apiId?: Prisma.IntFieldUpdateOperationsInput | number
   utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   matchday?: Prisma.IntFieldUpdateOperationsInput | number
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   winner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -913,6 +1007,9 @@ export type MatchUpdateWithoutPredictionsInput = {
   poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   season?: Prisma.SeasonUpdateOneRequiredWithoutMatchesNestedInput
@@ -925,7 +1022,7 @@ export type MatchUncheckedUpdateWithoutPredictionsInput = {
   apiId?: Prisma.IntFieldUpdateOperationsInput | number
   seasonId?: Prisma.IntFieldUpdateOperationsInput | number
   utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   matchday?: Prisma.IntFieldUpdateOperationsInput | number
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   homeTeamId?: Prisma.IntFieldUpdateOperationsInput | number
@@ -936,6 +1033,9 @@ export type MatchUncheckedUpdateWithoutPredictionsInput = {
   poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -943,7 +1043,7 @@ export type MatchUncheckedUpdateWithoutPredictionsInput = {
 export type MatchCreateWithoutSeasonInput = {
   apiId: number
   utcDate: Date | string
-  status: string
+  status: $Enums.MatchStatus
   matchday: number
   stage?: string | null
   winner?: string | null
@@ -952,6 +1052,9 @@ export type MatchCreateWithoutSeasonInput = {
   poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
   homeTeam: Prisma.TeamCreateNestedOneWithoutHomeMatchesInput
@@ -963,7 +1066,7 @@ export type MatchUncheckedCreateWithoutSeasonInput = {
   id?: number
   apiId: number
   utcDate: Date | string
-  status: string
+  status: $Enums.MatchStatus
   matchday: number
   stage?: string | null
   homeTeamId: number
@@ -974,6 +1077,9 @@ export type MatchUncheckedCreateWithoutSeasonInput = {
   poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
   predictions?: Prisma.PredictionUncheckedCreateNestedManyWithoutMatchInput
@@ -1013,7 +1119,7 @@ export type MatchScalarWhereInput = {
   apiId?: Prisma.IntFilter<"Match"> | number
   seasonId?: Prisma.IntFilter<"Match"> | number
   utcDate?: Prisma.DateTimeFilter<"Match"> | Date | string
-  status?: Prisma.StringFilter<"Match"> | string
+  status?: Prisma.EnumMatchStatusFilter<"Match"> | $Enums.MatchStatus
   matchday?: Prisma.IntFilter<"Match"> | number
   stage?: Prisma.StringNullableFilter<"Match"> | string | null
   homeTeamId?: Prisma.IntFilter<"Match"> | number
@@ -1024,6 +1130,9 @@ export type MatchScalarWhereInput = {
   poolHome?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFilter<"Match"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFilter<"Match"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Match"> | Date | string
 }
@@ -1031,7 +1140,7 @@ export type MatchScalarWhereInput = {
 export type MatchCreateWithoutHomeTeamInput = {
   apiId: number
   utcDate: Date | string
-  status: string
+  status: $Enums.MatchStatus
   matchday: number
   stage?: string | null
   winner?: string | null
@@ -1040,6 +1149,9 @@ export type MatchCreateWithoutHomeTeamInput = {
   poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
   season: Prisma.SeasonCreateNestedOneWithoutMatchesInput
@@ -1052,7 +1164,7 @@ export type MatchUncheckedCreateWithoutHomeTeamInput = {
   apiId: number
   seasonId: number
   utcDate: Date | string
-  status: string
+  status: $Enums.MatchStatus
   matchday: number
   stage?: string | null
   awayTeamId: number
@@ -1062,6 +1174,9 @@ export type MatchUncheckedCreateWithoutHomeTeamInput = {
   poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
   predictions?: Prisma.PredictionUncheckedCreateNestedManyWithoutMatchInput
@@ -1080,7 +1195,7 @@ export type MatchCreateManyHomeTeamInputEnvelope = {
 export type MatchCreateWithoutAwayTeamInput = {
   apiId: number
   utcDate: Date | string
-  status: string
+  status: $Enums.MatchStatus
   matchday: number
   stage?: string | null
   winner?: string | null
@@ -1089,6 +1204,9 @@ export type MatchCreateWithoutAwayTeamInput = {
   poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
   season: Prisma.SeasonCreateNestedOneWithoutMatchesInput
@@ -1101,7 +1219,7 @@ export type MatchUncheckedCreateWithoutAwayTeamInput = {
   apiId: number
   seasonId: number
   utcDate: Date | string
-  status: string
+  status: $Enums.MatchStatus
   matchday: number
   stage?: string | null
   homeTeamId: number
@@ -1111,6 +1229,9 @@ export type MatchUncheckedCreateWithoutAwayTeamInput = {
   poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
   predictions?: Prisma.PredictionUncheckedCreateNestedManyWithoutMatchInput
@@ -1162,7 +1283,7 @@ export type MatchCreateManySeasonInput = {
   id?: number
   apiId: number
   utcDate: Date | string
-  status: string
+  status: $Enums.MatchStatus
   matchday: number
   stage?: string | null
   homeTeamId: number
@@ -1173,6 +1294,9 @@ export type MatchCreateManySeasonInput = {
   poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1180,7 +1304,7 @@ export type MatchCreateManySeasonInput = {
 export type MatchUpdateWithoutSeasonInput = {
   apiId?: Prisma.IntFieldUpdateOperationsInput | number
   utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   matchday?: Prisma.IntFieldUpdateOperationsInput | number
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   winner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1189,6 +1313,9 @@ export type MatchUpdateWithoutSeasonInput = {
   poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   homeTeam?: Prisma.TeamUpdateOneRequiredWithoutHomeMatchesNestedInput
@@ -1200,7 +1327,7 @@ export type MatchUncheckedUpdateWithoutSeasonInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   apiId?: Prisma.IntFieldUpdateOperationsInput | number
   utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   matchday?: Prisma.IntFieldUpdateOperationsInput | number
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   homeTeamId?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1211,6 +1338,9 @@ export type MatchUncheckedUpdateWithoutSeasonInput = {
   poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   predictions?: Prisma.PredictionUncheckedUpdateManyWithoutMatchNestedInput
@@ -1220,7 +1350,7 @@ export type MatchUncheckedUpdateManyWithoutSeasonInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   apiId?: Prisma.IntFieldUpdateOperationsInput | number
   utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   matchday?: Prisma.IntFieldUpdateOperationsInput | number
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   homeTeamId?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1231,6 +1361,9 @@ export type MatchUncheckedUpdateManyWithoutSeasonInput = {
   poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1240,7 +1373,7 @@ export type MatchCreateManyHomeTeamInput = {
   apiId: number
   seasonId: number
   utcDate: Date | string
-  status: string
+  status: $Enums.MatchStatus
   matchday: number
   stage?: string | null
   awayTeamId: number
@@ -1250,6 +1383,9 @@ export type MatchCreateManyHomeTeamInput = {
   poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1259,7 +1395,7 @@ export type MatchCreateManyAwayTeamInput = {
   apiId: number
   seasonId: number
   utcDate: Date | string
-  status: string
+  status: $Enums.MatchStatus
   matchday: number
   stage?: string | null
   homeTeamId: number
@@ -1269,6 +1405,9 @@ export type MatchCreateManyAwayTeamInput = {
   poolHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1276,7 +1415,7 @@ export type MatchCreateManyAwayTeamInput = {
 export type MatchUpdateWithoutHomeTeamInput = {
   apiId?: Prisma.IntFieldUpdateOperationsInput | number
   utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   matchday?: Prisma.IntFieldUpdateOperationsInput | number
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   winner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1285,6 +1424,9 @@ export type MatchUpdateWithoutHomeTeamInput = {
   poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   season?: Prisma.SeasonUpdateOneRequiredWithoutMatchesNestedInput
@@ -1297,7 +1439,7 @@ export type MatchUncheckedUpdateWithoutHomeTeamInput = {
   apiId?: Prisma.IntFieldUpdateOperationsInput | number
   seasonId?: Prisma.IntFieldUpdateOperationsInput | number
   utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   matchday?: Prisma.IntFieldUpdateOperationsInput | number
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   awayTeamId?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1307,6 +1449,9 @@ export type MatchUncheckedUpdateWithoutHomeTeamInput = {
   poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   predictions?: Prisma.PredictionUncheckedUpdateManyWithoutMatchNestedInput
@@ -1317,7 +1462,7 @@ export type MatchUncheckedUpdateManyWithoutHomeTeamInput = {
   apiId?: Prisma.IntFieldUpdateOperationsInput | number
   seasonId?: Prisma.IntFieldUpdateOperationsInput | number
   utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   matchday?: Prisma.IntFieldUpdateOperationsInput | number
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   awayTeamId?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1327,6 +1472,9 @@ export type MatchUncheckedUpdateManyWithoutHomeTeamInput = {
   poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1334,7 +1482,7 @@ export type MatchUncheckedUpdateManyWithoutHomeTeamInput = {
 export type MatchUpdateWithoutAwayTeamInput = {
   apiId?: Prisma.IntFieldUpdateOperationsInput | number
   utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   matchday?: Prisma.IntFieldUpdateOperationsInput | number
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   winner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1343,6 +1491,9 @@ export type MatchUpdateWithoutAwayTeamInput = {
   poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   season?: Prisma.SeasonUpdateOneRequiredWithoutMatchesNestedInput
@@ -1355,7 +1506,7 @@ export type MatchUncheckedUpdateWithoutAwayTeamInput = {
   apiId?: Prisma.IntFieldUpdateOperationsInput | number
   seasonId?: Prisma.IntFieldUpdateOperationsInput | number
   utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   matchday?: Prisma.IntFieldUpdateOperationsInput | number
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   homeTeamId?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1365,6 +1516,9 @@ export type MatchUncheckedUpdateWithoutAwayTeamInput = {
   poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   predictions?: Prisma.PredictionUncheckedUpdateManyWithoutMatchNestedInput
@@ -1375,7 +1529,7 @@ export type MatchUncheckedUpdateManyWithoutAwayTeamInput = {
   apiId?: Prisma.IntFieldUpdateOperationsInput | number
   seasonId?: Prisma.IntFieldUpdateOperationsInput | number
   utcDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   matchday?: Prisma.IntFieldUpdateOperationsInput | number
   stage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   homeTeamId?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1385,6 +1539,9 @@ export type MatchUncheckedUpdateManyWithoutAwayTeamInput = {
   poolHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   poolAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsHome?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsDraw?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  oddsAway?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1436,6 +1593,9 @@ export type MatchSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   poolHome?: boolean
   poolDraw?: boolean
   poolAway?: boolean
+  oddsHome?: boolean
+  oddsDraw?: boolean
+  oddsAway?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   season?: boolean | Prisma.SeasonDefaultArgs<ExtArgs>
@@ -1461,6 +1621,9 @@ export type MatchSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   poolHome?: boolean
   poolDraw?: boolean
   poolAway?: boolean
+  oddsHome?: boolean
+  oddsDraw?: boolean
+  oddsAway?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   season?: boolean | Prisma.SeasonDefaultArgs<ExtArgs>
@@ -1484,6 +1647,9 @@ export type MatchSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   poolHome?: boolean
   poolDraw?: boolean
   poolAway?: boolean
+  oddsHome?: boolean
+  oddsDraw?: boolean
+  oddsAway?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   season?: boolean | Prisma.SeasonDefaultArgs<ExtArgs>
@@ -1507,11 +1673,14 @@ export type MatchSelectScalar = {
   poolHome?: boolean
   poolDraw?: boolean
   poolAway?: boolean
+  oddsHome?: boolean
+  oddsDraw?: boolean
+  oddsAway?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type MatchOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "apiId" | "seasonId" | "utcDate" | "status" | "matchday" | "stage" | "homeTeamId" | "awayTeamId" | "winner" | "homeScore" | "awayScore" | "poolHome" | "poolDraw" | "poolAway" | "createdAt" | "updatedAt", ExtArgs["result"]["match"]>
+export type MatchOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "apiId" | "seasonId" | "utcDate" | "status" | "matchday" | "stage" | "homeTeamId" | "awayTeamId" | "winner" | "homeScore" | "awayScore" | "poolHome" | "poolDraw" | "poolAway" | "oddsHome" | "oddsDraw" | "oddsAway" | "createdAt" | "updatedAt", ExtArgs["result"]["match"]>
 export type MatchInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   season?: boolean | Prisma.SeasonDefaultArgs<ExtArgs>
   homeTeam?: boolean | Prisma.TeamDefaultArgs<ExtArgs>
@@ -1543,7 +1712,7 @@ export type $MatchPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     apiId: number
     seasonId: number
     utcDate: Date
-    status: string
+    status: $Enums.MatchStatus
     matchday: number
     stage: string | null
     homeTeamId: number
@@ -1554,6 +1723,9 @@ export type $MatchPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     poolHome: runtime.Decimal
     poolDraw: runtime.Decimal
     poolAway: runtime.Decimal
+    oddsHome: runtime.Decimal
+    oddsDraw: runtime.Decimal
+    oddsAway: runtime.Decimal
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["match"]>
@@ -1987,7 +2159,7 @@ export interface MatchFieldRefs {
   readonly apiId: Prisma.FieldRef<"Match", 'Int'>
   readonly seasonId: Prisma.FieldRef<"Match", 'Int'>
   readonly utcDate: Prisma.FieldRef<"Match", 'DateTime'>
-  readonly status: Prisma.FieldRef<"Match", 'String'>
+  readonly status: Prisma.FieldRef<"Match", 'MatchStatus'>
   readonly matchday: Prisma.FieldRef<"Match", 'Int'>
   readonly stage: Prisma.FieldRef<"Match", 'String'>
   readonly homeTeamId: Prisma.FieldRef<"Match", 'Int'>
@@ -1998,6 +2170,9 @@ export interface MatchFieldRefs {
   readonly poolHome: Prisma.FieldRef<"Match", 'Decimal'>
   readonly poolDraw: Prisma.FieldRef<"Match", 'Decimal'>
   readonly poolAway: Prisma.FieldRef<"Match", 'Decimal'>
+  readonly oddsHome: Prisma.FieldRef<"Match", 'Decimal'>
+  readonly oddsDraw: Prisma.FieldRef<"Match", 'Decimal'>
+  readonly oddsAway: Prisma.FieldRef<"Match", 'Decimal'>
   readonly createdAt: Prisma.FieldRef<"Match", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Match", 'DateTime'>
 }

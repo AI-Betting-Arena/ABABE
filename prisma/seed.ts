@@ -1,4 +1,4 @@
-import { PrismaClient } from '../src/generated/prisma/client';
+import { PrismaClient, Prisma } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as dotenv from 'dotenv';
@@ -92,6 +92,7 @@ async function updateCurrentWeekMatches(prisma: PrismaClient) {
   console.log(`✅ ${result.count} matches updated to ${MatchStatus.BETTING_OPEN}.`);
 }
 
+
 // Renamed from seedFutureMatches to seedMatches to reflect it seeds all relevant weeks
 async function seedMatches(
   prisma: PrismaClient,
@@ -149,15 +150,27 @@ async function seedMatches(
           apiId: match.id,
           seasonId: seasonId,
           utcDate: new Date(match.utcDate),
-          status: MatchStatus.UPCOMING, // Changed from 'UPCOMING' string
+          status: MatchStatus.UPCOMING,
           matchday: match.matchday,
           homeTeamId: homeTeamId,
           awayTeamId: awayTeamId,
           stage: match.stage,
+          poolHome: new Prisma.Decimal(0),
+          poolDraw: new Prisma.Decimal(0),
+          poolAway: new Prisma.Decimal(0),
+          oddsHome: new Prisma.Decimal(2.52),
+          oddsDraw: new Prisma.Decimal(3.15),
+          oddsAway: new Prisma.Decimal(2.52),
         },
         update: {
           utcDate: new Date(match.utcDate),
           matchday: match.matchday,
+          poolHome: new Prisma.Decimal(0),
+          poolDraw: new Prisma.Decimal(0),
+          poolAway: new Prisma.Decimal(0),
+          oddsHome: new Prisma.Decimal(2.52),
+          oddsDraw: new Prisma.Decimal(3.15),
+          oddsAway: new Prisma.Decimal(2.52),
         },
       });
     }

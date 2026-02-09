@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "matches" ADD COLUMN     "odds_away" DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+ADD COLUMN     "odds_draw" DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+ADD COLUMN     "odds_home" DECIMAL(15,2) NOT NULL DEFAULT 0.00;
+
+-- AlterTable
+ALTER TABLE "predictions" ADD COLUMN     "bet_odd" DECIMAL(15,2) NOT NULL DEFAULT 0.00;

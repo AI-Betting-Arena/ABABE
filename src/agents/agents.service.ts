@@ -8,25 +8,20 @@ import {
 import { PrismaService } from '../prisma.service';
 import { DateProvider } from '../common/providers/date.provider';
 import { MatchStatus } from '../common/constants/match-status.enum';
+import { MatchesService } from '../matches/matches.service'; // Import MatchesService
+import { AgentBetPredictionType, ProcessBetRequestDto } from './dto/request/process-bet-request.dto'; // Import DTOs
+import { ProcessBetResponseDto } from './dto/response/process-bet-response.dto'; // Import ProcessBetResponseDto
+import { Prisma } from '@prisma/client'; // Import Prisma for Decimal
 
 @Injectable()
 export class AgentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly dateProvider: DateProvider,
+    private readonly matchesService: MatchesService, // Inject MatchesService
   ) {}
 
-  async processBet(data: {
-    agentId: string;
-    secretKey: string;
-    matchId: number;
-    prediction: string;
-    betAmount: number;
-    confidence: number; // 추가
-    reason: string;
-    keyPoints: string[]; // 추가
-    analysisStats?: any; // 추가 (JsonB)
-  }) {
+  async processBet(data: ProcessBetRequestDto): Promise<ProcessBetResponseDto> {
     // 💡 Prisma 트랜잭션 시작
     return await this.prisma.$transaction(async (tx) => {
       // 1. 에이전트 존재 여부 및 비밀키 확인
@@ -81,26 +76,26 @@ export class AgentsService {
       }
 
       // 3. 잔액 및 베팅량 조건 확인 (Decimal 계산 주의)
-      // SOLID 원칙: 단일 책임 원칙 (SRP)을 준수하기 위해 베팅 규칙 검증 로직을 추가
-      // KISS 원칙: 복잡하지 않게 직관적인 조건문으로 로직 구현
-      const currentBalance = Number(agent.balance);
-      const betAmount = data.betAmount;
+      const betAmountDecimal = new Prisma.Decimal(data.betAmount);
+      const currentBalanceDecimal = agent.balance;
 
       // 최소 베팅 금액 확인
-      if (betAmount < 100) {
-        throw new BadRequestException('Minimum bet amount is 100 points.');
+      const MIN_BET_AMOUNT_RULE = new Prisma.Decimal(100);
+      if (betAmountDecimal.lessThan(MIN_BET_AMOUNT_RULE)) {
+        throw new BadRequestException(`Minimum bet amount is ${MIN_BET_AMOUNT_RULE.toNumber()} points.`);
       }
 
       // 최대 베팅 금액 (20%) 확인
-      const maxBetAmount = currentBalance * 0.2;
-      if (betAmount > maxBetAmount) {
+      const MAX_BET_PERCENTAGE = new Prisma.Decimal(0.2);
+      const maxBetAmount = currentBalanceDecimal.times(MAX_BET_PERCENTAGE);
+      if (betAmountDecimal.greaterThan(maxBetAmount)) {
         throw new BadRequestException(
-          `Cannot bet more than 20% of your total points (${maxBetAmount} points).`,
+          `Cannot bet more than 20% of your total points (${maxBetAmount.toFixed(2)} points).`,
         );
       }
 
       // 보유 잔액 확인
-      if (currentBalance < betAmount) {
+      if (currentBalanceDecimal.lessThan(betAmountDecimal)) {
         throw new BadRequestException('Insufficient balance.');
       }
 
@@ -109,33 +104,60 @@ export class AgentsService {
         where: { id: agent.id },
         data: {
           balance: {
-            decrement: data.betAmount,
+            decrement: betAmountDecimal,
           },
         },
       });
 
-      // 5. Prediction (베팅 기록) 생성
-      // keyPoints는 우선 비워두거나 간단히 요약해서 저장
-      const prediction = await tx.prediction.create({
+      // 5. Match 풀 업데이트 및 배당률 계산
+      const { oddsHome, oddsDraw, oddsAway } = await this.matchesService.calculateAndSetOdds(
+        data.matchId,
+        betAmountDecimal,
+        data.prediction,
+      );
+
+      // 6. 베팅 시점의 배당률 결정
+      let betOdd: Prisma.Decimal;
+      switch (data.prediction) {
+        case AgentBetPredictionType.HOME_TEAM:
+          betOdd = oddsHome;
+          break;
+        case AgentBetPredictionType.DRAW:
+          betOdd = oddsDraw;
+          break;
+        case AgentBetPredictionType.AWAY_TEAM:
+          betOdd = oddsAway;
+          break;
+        default:
+          throw new Error('Invalid prediction type for odds calculation'); // Should not happen due to DTO validation
+      }
+
+      // 7. Prediction (베팅 기록) 생성
+      const createdPrediction = await tx.prediction.create({
         data: {
           agentId: agent.id,
           matchId: data.matchId,
           prediction: data.prediction,
-          betAmount: data.betAmount,
-          confidence: data.confidence, // 🎯 추가
-          summary: data.reason.substring(0, 100),
-          content: data.reason,
-          keyPoints: data.keyPoints, // 🎯 추가 (String[])
-          analysisStats: data.analysisStats || {}, // 🎯 추가 (JsonB)
+          betAmount: betAmountDecimal,
+          confidence: data.confidence,
+          summary: data.summary,
+          content: data.content || '',
+          keyPoints: data.keyPoints,
+          analysisStats: data.analysisStats || {},
+          betOdd: betOdd, // Store the odds at the time of placing the bet
           status: 'PENDING',
         },
       });
 
-      // 6. 결과 반환 (McpService로 보낼 데이터)
+      // 8. 결과 반환 (McpService로 보낼 데이터)
       return {
         agentName: updatedAgent.name,
-        remainingBalance: updatedAgent.balance,
-        predictionId: prediction.id,
+        remainingBalance: updatedAgent.balance.toNumber(),
+        betAmount: betAmountDecimal.toNumber(),
+        betOdd: betOdd.toNumber(),
+        predictionType: data.prediction,
+        matchId: data.matchId,
+        predictionId: createdPrediction.id,
       };
     });
   }

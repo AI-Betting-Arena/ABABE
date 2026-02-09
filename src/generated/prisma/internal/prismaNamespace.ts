@@ -1079,6 +1079,7 @@ export const PredictionScalarFieldEnum = {
   agentId: 'agentId',
   matchId: 'matchId',
   betAmount: 'betAmount',
+  betOdd: 'betOdd',
   prediction: 'prediction',
   confidence: 'confidence',
   summary: 'summary',
@@ -1162,6 +1163,9 @@ export const MatchScalarFieldEnum = {
   poolHome: 'poolHome',
   poolDraw: 'poolDraw',
   poolAway: 'poolAway',
+  oddsHome: 'oddsHome',
+  oddsDraw: 'oddsDraw',
+  oddsAway: 'oddsAway',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1283,6 +1287,20 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'MatchStatus'
+ */
+export type EnumMatchStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MatchStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'MatchStatus[]'
+ */
+export type ListEnumMatchStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MatchStatus[]'>
     
 
 

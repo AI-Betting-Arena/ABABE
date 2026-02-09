@@ -31,6 +31,7 @@ export type PredictionAvgAggregateOutputType = {
   agentId: number | null
   matchId: number | null
   betAmount: runtime.Decimal | null
+  betOdd: runtime.Decimal | null
   confidence: number | null
 }
 
@@ -39,6 +40,7 @@ export type PredictionSumAggregateOutputType = {
   agentId: number | null
   matchId: number | null
   betAmount: runtime.Decimal | null
+  betOdd: runtime.Decimal | null
   confidence: number | null
 }
 
@@ -47,6 +49,7 @@ export type PredictionMinAggregateOutputType = {
   agentId: number | null
   matchId: number | null
   betAmount: runtime.Decimal | null
+  betOdd: runtime.Decimal | null
   prediction: string | null
   confidence: number | null
   summary: string | null
@@ -61,6 +64,7 @@ export type PredictionMaxAggregateOutputType = {
   agentId: number | null
   matchId: number | null
   betAmount: runtime.Decimal | null
+  betOdd: runtime.Decimal | null
   prediction: string | null
   confidence: number | null
   summary: string | null
@@ -75,6 +79,7 @@ export type PredictionCountAggregateOutputType = {
   agentId: number
   matchId: number
   betAmount: number
+  betOdd: number
   prediction: number
   confidence: number
   summary: number
@@ -93,6 +98,7 @@ export type PredictionAvgAggregateInputType = {
   agentId?: true
   matchId?: true
   betAmount?: true
+  betOdd?: true
   confidence?: true
 }
 
@@ -101,6 +107,7 @@ export type PredictionSumAggregateInputType = {
   agentId?: true
   matchId?: true
   betAmount?: true
+  betOdd?: true
   confidence?: true
 }
 
@@ -109,6 +116,7 @@ export type PredictionMinAggregateInputType = {
   agentId?: true
   matchId?: true
   betAmount?: true
+  betOdd?: true
   prediction?: true
   confidence?: true
   summary?: true
@@ -123,6 +131,7 @@ export type PredictionMaxAggregateInputType = {
   agentId?: true
   matchId?: true
   betAmount?: true
+  betOdd?: true
   prediction?: true
   confidence?: true
   summary?: true
@@ -137,6 +146,7 @@ export type PredictionCountAggregateInputType = {
   agentId?: true
   matchId?: true
   betAmount?: true
+  betOdd?: true
   prediction?: true
   confidence?: true
   summary?: true
@@ -240,6 +250,7 @@ export type PredictionGroupByOutputType = {
   agentId: number
   matchId: number
   betAmount: runtime.Decimal
+  betOdd: runtime.Decimal
   prediction: string
   confidence: number
   summary: string
@@ -279,6 +290,7 @@ export type PredictionWhereInput = {
   agentId?: Prisma.IntFilter<"Prediction"> | number
   matchId?: Prisma.IntFilter<"Prediction"> | number
   betAmount?: Prisma.DecimalFilter<"Prediction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: Prisma.DecimalFilter<"Prediction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction?: Prisma.StringFilter<"Prediction"> | string
   confidence?: Prisma.IntFilter<"Prediction"> | number
   summary?: Prisma.StringFilter<"Prediction"> | string
@@ -297,6 +309,7 @@ export type PredictionOrderByWithRelationInput = {
   agentId?: Prisma.SortOrder
   matchId?: Prisma.SortOrder
   betAmount?: Prisma.SortOrder
+  betOdd?: Prisma.SortOrder
   prediction?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   summary?: Prisma.SortOrder
@@ -318,6 +331,7 @@ export type PredictionWhereUniqueInput = Prisma.AtLeast<{
   agentId?: Prisma.IntFilter<"Prediction"> | number
   matchId?: Prisma.IntFilter<"Prediction"> | number
   betAmount?: Prisma.DecimalFilter<"Prediction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: Prisma.DecimalFilter<"Prediction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction?: Prisma.StringFilter<"Prediction"> | string
   confidence?: Prisma.IntFilter<"Prediction"> | number
   summary?: Prisma.StringFilter<"Prediction"> | string
@@ -336,6 +350,7 @@ export type PredictionOrderByWithAggregationInput = {
   agentId?: Prisma.SortOrder
   matchId?: Prisma.SortOrder
   betAmount?: Prisma.SortOrder
+  betOdd?: Prisma.SortOrder
   prediction?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   summary?: Prisma.SortOrder
@@ -360,6 +375,7 @@ export type PredictionScalarWhereWithAggregatesInput = {
   agentId?: Prisma.IntWithAggregatesFilter<"Prediction"> | number
   matchId?: Prisma.IntWithAggregatesFilter<"Prediction"> | number
   betAmount?: Prisma.DecimalWithAggregatesFilter<"Prediction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: Prisma.DecimalWithAggregatesFilter<"Prediction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction?: Prisma.StringWithAggregatesFilter<"Prediction"> | string
   confidence?: Prisma.IntWithAggregatesFilter<"Prediction"> | number
   summary?: Prisma.StringWithAggregatesFilter<"Prediction"> | string
@@ -373,6 +389,7 @@ export type PredictionScalarWhereWithAggregatesInput = {
 
 export type PredictionCreateInput = {
   betAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction: string
   confidence: number
   summary: string
@@ -391,6 +408,7 @@ export type PredictionUncheckedCreateInput = {
   agentId: number
   matchId: number
   betAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction: string
   confidence: number
   summary: string
@@ -404,6 +422,7 @@ export type PredictionUncheckedCreateInput = {
 
 export type PredictionUpdateInput = {
   betAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
@@ -422,6 +441,7 @@ export type PredictionUncheckedUpdateInput = {
   agentId?: Prisma.IntFieldUpdateOperationsInput | number
   matchId?: Prisma.IntFieldUpdateOperationsInput | number
   betAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
@@ -438,6 +458,7 @@ export type PredictionCreateManyInput = {
   agentId: number
   matchId: number
   betAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction: string
   confidence: number
   summary: string
@@ -451,6 +472,7 @@ export type PredictionCreateManyInput = {
 
 export type PredictionUpdateManyMutationInput = {
   betAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
@@ -467,6 +489,7 @@ export type PredictionUncheckedUpdateManyInput = {
   agentId?: Prisma.IntFieldUpdateOperationsInput | number
   matchId?: Prisma.IntFieldUpdateOperationsInput | number
   betAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
@@ -501,6 +524,7 @@ export type PredictionCountOrderByAggregateInput = {
   agentId?: Prisma.SortOrder
   matchId?: Prisma.SortOrder
   betAmount?: Prisma.SortOrder
+  betOdd?: Prisma.SortOrder
   prediction?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   summary?: Prisma.SortOrder
@@ -517,6 +541,7 @@ export type PredictionAvgOrderByAggregateInput = {
   agentId?: Prisma.SortOrder
   matchId?: Prisma.SortOrder
   betAmount?: Prisma.SortOrder
+  betOdd?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
 }
 
@@ -525,6 +550,7 @@ export type PredictionMaxOrderByAggregateInput = {
   agentId?: Prisma.SortOrder
   matchId?: Prisma.SortOrder
   betAmount?: Prisma.SortOrder
+  betOdd?: Prisma.SortOrder
   prediction?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   summary?: Prisma.SortOrder
@@ -539,6 +565,7 @@ export type PredictionMinOrderByAggregateInput = {
   agentId?: Prisma.SortOrder
   matchId?: Prisma.SortOrder
   betAmount?: Prisma.SortOrder
+  betOdd?: Prisma.SortOrder
   prediction?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
   summary?: Prisma.SortOrder
@@ -553,6 +580,7 @@ export type PredictionSumOrderByAggregateInput = {
   agentId?: Prisma.SortOrder
   matchId?: Prisma.SortOrder
   betAmount?: Prisma.SortOrder
+  betOdd?: Prisma.SortOrder
   confidence?: Prisma.SortOrder
 }
 
@@ -651,6 +679,7 @@ export type PredictionUncheckedUpdateManyWithoutMatchNestedInput = {
 
 export type PredictionCreateWithoutAgentInput = {
   betAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction: string
   confidence: number
   summary: string
@@ -667,6 +696,7 @@ export type PredictionUncheckedCreateWithoutAgentInput = {
   id?: number
   matchId: number
   betAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction: string
   confidence: number
   summary: string
@@ -712,6 +742,7 @@ export type PredictionScalarWhereInput = {
   agentId?: Prisma.IntFilter<"Prediction"> | number
   matchId?: Prisma.IntFilter<"Prediction"> | number
   betAmount?: Prisma.DecimalFilter<"Prediction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: Prisma.DecimalFilter<"Prediction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction?: Prisma.StringFilter<"Prediction"> | string
   confidence?: Prisma.IntFilter<"Prediction"> | number
   summary?: Prisma.StringFilter<"Prediction"> | string
@@ -725,6 +756,7 @@ export type PredictionScalarWhereInput = {
 
 export type PredictionCreateWithoutMatchInput = {
   betAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction: string
   confidence: number
   summary: string
@@ -741,6 +773,7 @@ export type PredictionUncheckedCreateWithoutMatchInput = {
   id?: number
   agentId: number
   betAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction: string
   confidence: number
   summary: string
@@ -782,6 +815,7 @@ export type PredictionCreateManyAgentInput = {
   id?: number
   matchId: number
   betAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction: string
   confidence: number
   summary: string
@@ -795,6 +829,7 @@ export type PredictionCreateManyAgentInput = {
 
 export type PredictionUpdateWithoutAgentInput = {
   betAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
@@ -811,6 +846,7 @@ export type PredictionUncheckedUpdateWithoutAgentInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   matchId?: Prisma.IntFieldUpdateOperationsInput | number
   betAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
@@ -826,6 +862,7 @@ export type PredictionUncheckedUpdateManyWithoutAgentInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   matchId?: Prisma.IntFieldUpdateOperationsInput | number
   betAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
@@ -841,6 +878,7 @@ export type PredictionCreateManyMatchInput = {
   id?: number
   agentId: number
   betAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction: string
   confidence: number
   summary: string
@@ -854,6 +892,7 @@ export type PredictionCreateManyMatchInput = {
 
 export type PredictionUpdateWithoutMatchInput = {
   betAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
@@ -870,6 +909,7 @@ export type PredictionUncheckedUpdateWithoutMatchInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   agentId?: Prisma.IntFieldUpdateOperationsInput | number
   betAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
@@ -885,6 +925,7 @@ export type PredictionUncheckedUpdateManyWithoutMatchInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   agentId?: Prisma.IntFieldUpdateOperationsInput | number
   betAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  betOdd?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   prediction?: Prisma.StringFieldUpdateOperationsInput | string
   confidence?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
@@ -903,6 +944,7 @@ export type PredictionSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   agentId?: boolean
   matchId?: boolean
   betAmount?: boolean
+  betOdd?: boolean
   prediction?: boolean
   confidence?: boolean
   summary?: boolean
@@ -921,6 +963,7 @@ export type PredictionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   agentId?: boolean
   matchId?: boolean
   betAmount?: boolean
+  betOdd?: boolean
   prediction?: boolean
   confidence?: boolean
   summary?: boolean
@@ -939,6 +982,7 @@ export type PredictionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   agentId?: boolean
   matchId?: boolean
   betAmount?: boolean
+  betOdd?: boolean
   prediction?: boolean
   confidence?: boolean
   summary?: boolean
@@ -957,6 +1001,7 @@ export type PredictionSelectScalar = {
   agentId?: boolean
   matchId?: boolean
   betAmount?: boolean
+  betOdd?: boolean
   prediction?: boolean
   confidence?: boolean
   summary?: boolean
@@ -968,7 +1013,7 @@ export type PredictionSelectScalar = {
   updatedAt?: boolean
 }
 
-export type PredictionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "agentId" | "matchId" | "betAmount" | "prediction" | "confidence" | "summary" | "content" | "keyPoints" | "analysisStats" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["prediction"]>
+export type PredictionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "agentId" | "matchId" | "betAmount" | "betOdd" | "prediction" | "confidence" | "summary" | "content" | "keyPoints" | "analysisStats" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["prediction"]>
 export type PredictionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   agent?: boolean | Prisma.AgentDefaultArgs<ExtArgs>
   match?: boolean | Prisma.MatchDefaultArgs<ExtArgs>
@@ -993,6 +1038,7 @@ export type $PredictionPayload<ExtArgs extends runtime.Types.Extensions.Internal
     agentId: number
     matchId: number
     betAmount: runtime.Decimal
+    betOdd: runtime.Decimal
     prediction: string
     confidence: number
     summary: string
@@ -1431,6 +1477,7 @@ export interface PredictionFieldRefs {
   readonly agentId: Prisma.FieldRef<"Prediction", 'Int'>
   readonly matchId: Prisma.FieldRef<"Prediction", 'Int'>
   readonly betAmount: Prisma.FieldRef<"Prediction", 'Decimal'>
+  readonly betOdd: Prisma.FieldRef<"Prediction", 'Decimal'>
   readonly prediction: Prisma.FieldRef<"Prediction", 'String'>
   readonly confidence: Prisma.FieldRef<"Prediction", 'Int'>
   readonly summary: Prisma.FieldRef<"Prediction", 'String'>

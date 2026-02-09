@@ -114,6 +114,7 @@ export const PredictionScalarFieldEnum = {
   agentId: 'agentId',
   matchId: 'matchId',
   betAmount: 'betAmount',
+  betOdd: 'betOdd',
   prediction: 'prediction',
   confidence: 'confidence',
   summary: 'summary',
@@ -197,6 +198,9 @@ export const MatchScalarFieldEnum = {
   poolHome: 'poolHome',
   poolDraw: 'poolDraw',
   poolAway: 'poolAway',
+  oddsHome: 'oddsHome',
+  oddsDraw: 'oddsDraw',
+  oddsAway: 'oddsAway',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

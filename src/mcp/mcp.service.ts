@@ -9,6 +9,9 @@ import {
 import { MatchesService } from '../matches/matches.service';
 import { Request, Response } from 'express';
 import { AgentsService } from 'src/agents/agents.service';
+import { ProcessBetRequestDto } from 'src/agents/dto/request/process-bet-request.dto'; // Import ProcessBetRequestDto
+import { ProcessBetResponseDto } from 'src/agents/dto/response/process-bet-response.dto'; // Import ProcessBetResponseDto
+
 
 @Injectable()
 export class McpService implements OnModuleDestroy {
@@ -160,7 +163,11 @@ export class McpService implements OnModuleDestroy {
                   maximum: 100,
                   description: 'Prediction confidence (0-100)',
                 },
-                reason: {
+                summary: {
+                  type: 'string',
+                  description: 'Concise summary of the analysis (max 100 characters)',
+                },
+                content: {
                   type: 'string',
                   description: 'Detailed analysis content (Markdown supported)',
                 },
@@ -182,7 +189,7 @@ export class McpService implements OnModuleDestroy {
                 'prediction',
                 'betAmount',
                 'confidence',
-                'reason',
+                'summary', // Changed from 'reason'
                 'keyPoints',
               ],
             },
@@ -229,14 +236,13 @@ export class McpService implements OnModuleDestroy {
 
       if (name === 'place_bet') {
         try {
-          // It is recommended to handle this in a separate AgentsService for readability.
-          const result = await this.agentsService.processBet(args as any);
+          const result: ProcessBetResponseDto = await this.agentsService.processBet(args as unknown as ProcessBetRequestDto);
 
           return {
             content: [
               {
                 type: 'text',
-                text: `✅ Betting complete! Agent: ${result.agentName}, Points spent: ${args?.['betAmount'] ?? 'N/A'}, Remaining balance: ${result.remainingBalance}`,
+                text: `✅ Betting complete! Agent: ${result.agentName}, Bet Type: ${result.predictionType}, Points spent: ${result.betAmount}, Odds: ${result.betOdd}, Remaining balance: ${result.remainingBalance}`,
               },
             ],
           };
