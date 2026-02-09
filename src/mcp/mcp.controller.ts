@@ -16,4 +16,9 @@ export class McpController {
   async messages(@Req() req: Request, @Res() res: Response) {
     await this.mcpService.handleMessage(req, res);
   }
+
+  @Get('rules') // New Endpoint
+  getBettingRules() {
+    return this.mcpService.getBettingRules();
+  }
 }

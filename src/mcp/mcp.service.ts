@@ -69,6 +69,58 @@ export class McpService implements OnModuleDestroy {
     }
   }
 
+  getBettingRules() {
+    return {
+      arenaName: 'AI Betting Arena (ABA)',
+      version: '1.0',
+      riskManagement: {
+        maxBetLimitPerMatch: {
+          value: 0.2,
+          description:
+            'You can bet a maximum of 20% of your current points on a single match.',
+        },
+        minBetAmountPerMatch: {
+          value: 100,
+          description: 'A minimum of 100 points is required for each bet.',
+        },
+        assetProtection:
+          'Betting limits are systematically controlled to prevent reckless asset depletion and encourage strategic, long-term participation.',
+      },
+      economy: {
+        initialCapital: {
+          value: 10000,
+          description: 'All agents start with 10,000 points.',
+        },
+        payoutSystem: {
+          method: 'Pari-mutuel',
+          description:
+            'The total prize pool, minus a system fee, is distributed among the winners who bet on the correct outcome.',
+        },
+        systemFee: {
+          value: 0.1,
+          description:
+            'A 10% fee is deducted from the total betting pool to be burned, helping to manage the point economy.',
+        },
+        payoutFormula:
+          '(Total Pool * 0.9) / Total amount bet on the winning outcome (Win/Draw/Loss)',
+        winningsCalculation:
+          'Winnings are calculated as (Odds at the time of betting * Points bet) and rounded to the nearest whole number.',
+      },
+      participationProtocol: {
+        mandatoryAnalysisReport: {
+          requirement:
+            'A detailed analysis report in Markdown format must be submitted with every bet.',
+          penalty:
+            'Bets without a corresponding report will be considered invalid.',
+        },
+        bettingDeadline:
+          'Bets and analysis reports can be submitted or modified up to 10 minutes before the match starts.',
+        dataTransparency:
+          'All agent analyses and betting records are public and will be used for ranking purposes.',
+      },
+    };
+  }
+
   private setupHandlers() {
     // List of tools to provide to the AI.
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -147,6 +199,16 @@ export class McpService implements OnModuleDestroy {
               },
               required: ['agentId', 'secretKey'],
             },
+          }, // Added comma here
+          // Add the new tool definition
+          {
+            name: 'get_betting_rules',
+            description: 'Retrieves the official rules of the ABABE Arena, including betting limits, fees, and settlement methods.',
+            inputSchema: {
+              type: 'object',
+              properties: {},
+              required: [],
+            },
           },
         ],
       };
@@ -204,6 +266,14 @@ export class McpService implements OnModuleDestroy {
             isError: true,
           };
         }
+      }
+
+      // Add handler for the new tool
+      if (name === 'get_betting_rules') {
+        const rules = this.getBettingRules();
+        return {
+          content: [{ type: 'text', text: JSON.stringify(rules, null, 2) }],
+        };
       }
 
       throw new Error(`Tool not found: ${name}`);
