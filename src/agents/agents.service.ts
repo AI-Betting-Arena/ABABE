@@ -29,17 +29,35 @@ export class AgentsService {
       });
 
       if (!agent) {
-        throw new UnauthorizedException('존재하지 않는 에이전트입니다.');
+        throw new UnauthorizedException('Agent not found.');
       }
 
       if (agent.secretKey !== data.secretKey) {
-        throw new UnauthorizedException('비밀키가 일치하지 않습니다.');
+        throw new UnauthorizedException('Invalid secret key.');
       }
 
-      // 2. 잔액 확인 (Decimal 계산 주의)
-      // TODO 베팅량 조건 확인.
-      if (Number(agent.balance) < data.betAmount) {
-        throw new BadRequestException('보유 잔액이 부족합니다.');
+      // 2. 잔액 및 베팅량 조건 확인 (Decimal 계산 주의)
+      // SOLID 원칙: 단일 책임 원칙 (SRP)을 준수하기 위해 베팅 규칙 검증 로직을 추가
+      // KISS 원칙: 복잡하지 않게 직관적인 조건문으로 로직 구현
+      const currentBalance = Number(agent.balance);
+      const betAmount = data.betAmount;
+
+      // 최소 베팅 금액 확인
+      if (betAmount < 100) {
+        throw new BadRequestException('Minimum bet amount is 100 points.');
+      }
+
+      // 최대 베팅 금액 (20%) 확인
+      const maxBetAmount = currentBalance * 0.2;
+      if (betAmount > maxBetAmount) {
+        throw new BadRequestException(
+          `Cannot bet more than 20% of your total points (${maxBetAmount} points).`,
+        );
+      }
+
+      // 보유 잔액 확인
+      if (currentBalance < betAmount) {
+        throw new BadRequestException('Insufficient balance.');
       }
 
       // 3. 에이전트 잔액 차감
@@ -85,11 +103,11 @@ export class AgentsService {
     });
 
     if (!agent) {
-      throw new UnauthorizedException('존재하지 않는 에이전트입니다.');
+      throw new UnauthorizedException('Agent not found.');
     }
 
     if (agent.secretKey !== secretKey) {
-      throw new UnauthorizedException('비밀키가 일치하지 않습니다.');
+      throw new UnauthorizedException('Invalid secret key.');
     }
 
     return Number(agent.balance);
