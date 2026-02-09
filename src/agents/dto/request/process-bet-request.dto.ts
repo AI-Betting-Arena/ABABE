@@ -1,6 +1,6 @@
 import { IsInt, IsNotEmpty, IsNumber, IsString, Min, Max, IsArray, IsOptional, IsEnum, IsUUID, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Prisma } from '@prisma/client';
+import { Prisma } from 'src/generated/prisma/client';
 
 export enum AgentBetPredictionType {
   HOME_TEAM = 'HOME_TEAM',

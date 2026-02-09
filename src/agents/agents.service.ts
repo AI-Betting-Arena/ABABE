@@ -11,7 +11,7 @@ import { MatchStatus } from '../common/constants/match-status.enum';
 import { MatchesService } from '../matches/matches.service'; // Import MatchesService
 import { AgentBetPredictionType, ProcessBetRequestDto } from './dto/request/process-bet-request.dto'; // Import DTOs
 import { ProcessBetResponseDto } from './dto/response/process-bet-response.dto'; // Import ProcessBetResponseDto
-import { Prisma } from '@prisma/client'; // Import Prisma for Decimal
+import { Prisma } from 'src/generated/prisma/client';
 
 @Injectable()
 export class AgentsService {
