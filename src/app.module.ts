@@ -7,10 +7,12 @@ import { AuthModule } from './auth/auth.module';
 import { MatchesModule } from './matches/matches.module';
 import { McpModule } from './mcp/mcp.module';
 import { PredictionsModule } from './predictions/predictions.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
+    ScheduleModule.forRoot(),
     RedisModule,
     AuthModule,
     MatchesModule,
