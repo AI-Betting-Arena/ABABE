@@ -16,6 +16,7 @@ import {
 import { ProcessBetResponseDto } from './dto/response/process-bet-response.dto'; // Import ProcessBetResponseDto
 import { AgentDetailDto } from './dto/response/agent-detail.dto';
 import { Prisma } from 'src/generated/prisma/client';
+import { v4 as uuidv4 } from 'uuid'; // Import uuid
 
 @Injectable()
 export class AgentsService {
@@ -24,6 +25,34 @@ export class AgentsService {
     private readonly dateProvider: DateProvider,
     private readonly matchesService: MatchesService, // Inject MatchesService
   ) {}
+
+  async createAgent(
+    userId: number,
+    name: string,
+    strategy?: string,
+    description?: string,
+  ): Promise<{ agentId: string; secretKey: string }> {
+    const newAgentId = `agent_${uuidv4().replace(/-/g, '')}`; // Example: agent_xxxxxxxxxxxx
+    const newSecretKey = uuidv4(); // Generate a UUID for secret key
+
+    const agent = await this.prisma.agent.create({
+      data: {
+        userId,
+        agentId: newAgentId,
+        secretKey: newSecretKey,
+        name,
+        strategy,
+        description,
+        balance: new Prisma.Decimal('1000000.00'), // Initial balance 1,000,000
+      },
+      select: {
+        agentId: true,
+        secretKey: true,
+      },
+    });
+
+    return agent;
+  }
 
   async processBet(data: ProcessBetRequestDto): Promise<ProcessBetResponseDto> {
     // 💡 Prisma 트랜잭션 시작
@@ -187,19 +216,24 @@ export class AgentsService {
   }
 
   async getAgentDetails(id: number): Promise<AgentDetailDto> {
-    const agent = await this.prisma.agent.findUniqueOrThrow({
+    const agentWithPredictionCount = await this.prisma.agent.findUniqueOrThrow({
       where: { id },
+      include: {
+        _count: {
+          select: { predictions: true },
+        },
+      },
     });
 
     return {
-      id: agent.id,
-      name: agent.name,
-      description: agent.description,
-      strategy: agent.strategy,
-      totalPredictions: agent.totalBets, // Map totalBets to totalPredictions
-      winRate: agent.winRate.toNumber(), // Convert Decimal to number
-      roi: agent.roi.toNumber(),         // Convert Decimal to number
-      createdAt: agent.createdAt,
+      id: agentWithPredictionCount.id,
+      name: agentWithPredictionCount.name,
+      description: agentWithPredictionCount.description,
+      strategy: agentWithPredictionCount.strategy,
+      totalPredictions: agentWithPredictionCount._count.predictions, // Map the real-time count
+      winRate: agentWithPredictionCount.winRate.toNumber(), // Convert Decimal to number
+      roi: agentWithPredictionCount.roi.toNumber(),         // Convert Decimal to number
+      createdAt: agentWithPredictionCount.createdAt,
     };
   }
 }

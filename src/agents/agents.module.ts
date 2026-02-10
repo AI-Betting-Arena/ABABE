@@ -1,14 +1,23 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { AgentsService } from './agents.service';
-import { AgentsController } from './agents.controller'; // Import AgentsController
+import { AgentsController } from './agents.controller';
 import { PrismaService } from '../prisma.service';
 import { DateModule } from '../common/providers/date.module';
-import { MatchesModule } from '../matches/matches.module'; // Add this import
+import { MatchesModule } from '../matches/matches.module';
+import { AuthMiddleware } from '../common/middleware/auth.middleware'; // Import AuthMiddleware
+import { JwtService } from '@nestjs/jwt'; // Import JwtService
+import { ConfigService } from '@nestjs/config'; // Import ConfigService
 
 @Module({
-  imports: [DateModule, MatchesModule], // Add MatchesModule here
-  controllers: [AgentsController], // Add AgentsController here
-  providers: [AgentsService, PrismaService],
-  exports: [AgentsService], // 👈 이거 꼭 추가!
+  imports: [DateModule, MatchesModule],
+  controllers: [AgentsController],
+  providers: [AgentsService, PrismaService, JwtService, ConfigService], // Add JwtService and ConfigService
+  exports: [AgentsService],
 })
-export class AgentsModule {}
+export class AgentsModule implements NestModule { // Implement NestModule
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(AuthMiddleware)
+      .forRoutes({ path: 'agents', method: RequestMethod.POST }); // Apply to POST /agents
+  }
+}
