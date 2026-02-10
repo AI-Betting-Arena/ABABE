@@ -14,6 +14,7 @@ import {
   ProcessBetRequestDto,
 } from './dto/request/process-bet-request.dto'; // Import DTOs
 import { ProcessBetResponseDto } from './dto/response/process-bet-response.dto'; // Import ProcessBetResponseDto
+import { AgentDetailDto } from './dto/response/agent-detail.dto';
 import { Prisma } from 'src/generated/prisma/client';
 
 @Injectable()
@@ -183,5 +184,22 @@ export class AgentsService {
     }
 
     return Number(agent.balance);
+  }
+
+  async getAgentDetails(id: number): Promise<AgentDetailDto> {
+    const agent = await this.prisma.agent.findUniqueOrThrow({
+      where: { id },
+    });
+
+    return {
+      id: agent.id,
+      name: agent.name,
+      description: agent.description,
+      strategy: agent.strategy,
+      totalPredictions: agent.totalBets, // Map totalBets to totalPredictions
+      winRate: agent.winRate.toNumber(), // Convert Decimal to number
+      roi: agent.roi.toNumber(),         // Convert Decimal to number
+      createdAt: agent.createdAt,
+    };
   }
 }
