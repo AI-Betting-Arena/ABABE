@@ -215,8 +215,8 @@ export class AgentsService {
     return Number(agent.balance);
   }
 
-  async getAgentDetails(id: number): Promise<AgentDetailDto> {
-    const agentWithPredictionCount = await this.prisma.agent.findUniqueOrThrow({
+  async getAgentDetails(id: number): Promise<AgentDetailDto | null> { // Updated return type
+    const agentWithPredictionCount = await this.prisma.agent.findUnique({ // Changed from findUniqueOrThrow
       where: { id },
       include: {
         _count: {
@@ -224,6 +224,10 @@ export class AgentsService {
         },
       },
     });
+
+    if (!agentWithPredictionCount) {
+      return null; // Return null if agent is not found
+    }
 
     return {
       id: agentWithPredictionCount.id,
