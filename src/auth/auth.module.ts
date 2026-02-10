@@ -4,17 +4,21 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { PrismaService } from '../prisma.service';
 import { GithubStrategy } from './strategies/github.strategy';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    JwtModule.register({
-      global: true, // 다른 모듈에서도 사용 가능하게 설정
-      secret: 'YOUR_SECRET_KEY', // 실제로는 환경변수로 뺄 것
-      signOptions: { expiresIn: '1h' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '1h' },
+      }),
+      inject: [ConfigService],
     }),
   ],
   controllers: [AuthController],
   providers: [AuthService, PrismaService, GithubStrategy],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}
