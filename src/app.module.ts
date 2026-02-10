@@ -9,6 +9,7 @@ import { McpModule } from './mcp/mcp.module';
 import { PredictionsModule } from './predictions/predictions.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SettlementModule } from './settlement/settlement.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { SettlementModule } from './settlement/settlement.module';
     McpModule,
     PredictionsModule,
     SettlementModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
