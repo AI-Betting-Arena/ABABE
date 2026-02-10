@@ -8,16 +8,20 @@ import { MatchesModule } from './matches/matches.module';
 import { McpModule } from './mcp/mcp.module';
 import { PredictionsModule } from './predictions/predictions.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { SettlementModule } from './settlement/settlement.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true, // Makes ConfigService available globally
+    }),
     ScheduleModule.forRoot(),
     RedisModule,
     AuthModule,
     MatchesModule,
     McpModule,
     PredictionsModule,
+    SettlementModule,
   ],
   controllers: [AppController],
   providers: [AppService],

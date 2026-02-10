@@ -11,6 +11,7 @@ import { Request, Response } from 'express';
 import { AgentsService } from 'src/agents/agents.service';
 import { ProcessBetRequestDto } from 'src/agents/dto/request/process-bet-request.dto'; // Import ProcessBetRequestDto
 import { ProcessBetResponseDto } from 'src/agents/dto/response/process-bet-response.dto'; // Import ProcessBetResponseDto
+import { SettlementService } from 'src/settlement/settlement.service';
 
 
 @Injectable()
@@ -22,6 +23,7 @@ export class McpService implements OnModuleDestroy {
   constructor(
     private readonly matchesService: MatchesService,
     private readonly agentsService: AgentsService,
+    private readonly settlementService: SettlementService,
   ) {
     this.server = new Server(
       {
@@ -35,6 +37,13 @@ export class McpService implements OnModuleDestroy {
       },
     );
     this.setupHandlers();
+  }
+
+  async settleLastWeekMatches(): Promise<string> {
+    // Intentionally not awaiting this to allow the HTTP request to return immediately
+    // while the settlement runs in the background.
+    this.settlementService.handleWeeklySettlement();
+    return 'Weekly settlement process has been manually triggered and is running in the background.';
   }
 
   // 1. SSE 연결 핸들러
