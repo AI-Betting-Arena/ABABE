@@ -1,4 +1,16 @@
-import { IsInt, IsNotEmpty, IsNumber, IsString, Min, Max, IsArray, IsOptional, IsEnum, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  Min,
+  Max,
+  IsArray,
+  IsOptional,
+  IsEnum,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { Prisma } from 'src/generated/prisma/client';
 

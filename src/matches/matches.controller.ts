@@ -1,5 +1,22 @@
-import { Controller, Get, Query, Param, ParseIntPipe, Post, HttpStatus, HttpCode, ForbiddenException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiResponse, ApiParam, ApiOkResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Query,
+  Param,
+  ParseIntPipe,
+  Post,
+  HttpStatus,
+  HttpCode,
+  ForbiddenException,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiParam,
+  ApiOkResponse,
+} from '@nestjs/swagger';
 import { MatchesService } from './matches.service';
 import { GetMatchesRequestDto } from './dto/request/get-matches-request.dto';
 import { MatchDetailResponseDto } from './dto/response/match-detail-response.dto';
@@ -39,7 +56,8 @@ export class MatchesController {
   })
   async getMatches(
     @Query() query: GetMatchesRequestDto,
-  ): Promise<LeagueMatchesDto[]> { // Updated return type
+  ): Promise<LeagueMatchesDto[]> {
+    // Updated return type
     return this.matchesService.findMatches(query.from, query.to);
   }
 
@@ -60,16 +78,15 @@ export class MatchesController {
     type: MatchDetailResponseDto,
   })
   @ApiResponse({ status: 404, description: '경기를 찾을 수 없습니다.' })
-  async getMatchById(
-    @Param('id') id: number,
-  ): Promise<MatchDetailResponseDto> {
+  async getMatchById(@Param('id') id: number): Promise<MatchDetailResponseDto> {
     return this.matchesService.getMatchById(id);
   }
 
   @Get(':id/predictions')
   @ApiOperation({
     summary: '특정 경기의 AI 예측 목록 조회',
-    description: '주어진 경기 ID에 대한 모든 AI 에이전트의 예측 및 분석 결과를 조회합니다.',
+    description:
+      '주어진 경기 ID에 대한 모든 AI 에이전트의 예측 및 분석 결과를 조회합니다.',
   })
   @ApiParam({
     name: 'id',
@@ -92,14 +109,23 @@ export class MatchesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: '[개발/테스트용] 주간 경기 상태 업데이트 수동 트리거',
-    description: '개발 및 테스트 환경에서만 사용 가능합니다. 매주 월요일 00:00 UTC에 실행되는 스케줄러를 수동으로 트리거하여, 해당 주의 UPCOMING 경기들을 BETTING_OPEN 상태로 변경합니다.',
+    description:
+      '개발 및 테스트 환경에서만 사용 가능합니다. 매주 월요일 00:00 UTC에 실행되는 스케줄러를 수동으로 트리거하여, 해당 주의 UPCOMING 경기들을 BETTING_OPEN 상태로 변경합니다.',
   })
-  @ApiResponse({ status: HttpStatus.NO_CONTENT, description: '주간 경기 상태 업데이트가 성공적으로 트리거되었습니다.' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '프로덕션 환경에서는 이 엔드포인트를 사용할 수 없습니다.' })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: '주간 경기 상태 업데이트가 성공적으로 트리거되었습니다.',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: '프로덕션 환경에서는 이 엔드포인트를 사용할 수 없습니다.',
+  })
   async triggerWeeklyMatchStatusUpdate(): Promise<void> {
     // Only allow in non-production environments
     if (process.env.NODE_ENV === 'production') {
-      throw new ForbiddenException('프로덕션 환경에서는 이 엔드포인트를 사용할 수 없습니다.'); // Changed this line
+      throw new ForbiddenException(
+        '프로덕션 환경에서는 이 엔드포인트를 사용할 수 없습니다.',
+      ); // Changed this line
     }
     await this.matchesService.updateUpcomingMatchesToBettingOpen();
   }

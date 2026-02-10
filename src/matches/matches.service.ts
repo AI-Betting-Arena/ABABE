@@ -25,7 +25,9 @@ export class MatchesService {
     this.logger.log('Starting weekly match status update...');
     try {
       const updatedCount = await this.updateUpcomingMatchesToBettingOpen();
-      this.logger.log(`Weekly match status update completed. ${updatedCount} matches updated.`);
+      this.logger.log(
+        `Weekly match status update completed. ${updatedCount} matches updated.`,
+      );
     } catch (error) {
       this.logger.error(
         `Failed to complete weekly match status update: ${error.message}`,
@@ -40,7 +42,9 @@ export class MatchesService {
 
     // 이번 주 월요일 00:00:00 UTC
     const startDate = new Date(today);
-    startDate.setUTCDate(today.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    startDate.setUTCDate(
+      today.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1),
+    );
     startDate.setUTCHours(0, 0, 0, 0);
 
     // 이번 주 일요일 23:59:59.999 UTC
@@ -97,7 +101,8 @@ export class MatchesService {
         },
         homeTeam: true,
         awayTeam: true,
-        predictions: { // Include predictions to count them
+        predictions: {
+          // Include predictions to count them
           select: { id: true },
         },
       },
@@ -106,46 +111,43 @@ export class MatchesService {
       },
     });
 
-    const groupedByLeague = matches.reduce(
-      (acc, match) => {
-        const league = acc.find((l) => l.leagueId === match.season.leagueId);
-        const totalPool =
-          match.poolHome.toNumber() +
-          match.poolDraw.toNumber() +
-          match.poolAway.toNumber();
+    const groupedByLeague = matches.reduce((acc, match) => {
+      const league = acc.find((l) => l.leagueId === match.season.leagueId);
+      const totalPool =
+        match.poolHome.toNumber() +
+        match.poolDraw.toNumber() +
+        match.poolAway.toNumber();
 
-        const matchDetail: MatchDetailDto = {
-          id: match.id,
-          homeTeamId: match.homeTeam.id,
-          homeTeamName: match.homeTeam.name,
-          homeTeamEmblemUrl: match.homeTeam.crest,
-          awayTeamId: match.awayTeam.id,
-          awayTeamName: match.awayTeam.name,
-          awayTeamEmblemUrl: match.awayTeam.crest,
-          startTime: match.utcDate,
-          status: match.status,
-          // Use stored odds from the match object
-          oddsHome: match.oddsHome.toNumber(),
-          oddsDraw: match.oddsDraw.toNumber(),
-          oddsAway: match.oddsAway.toNumber(),
-          agentCount: match.predictions.length, // Use actual count of predictions
-        };
+      const matchDetail: MatchDetailDto = {
+        id: match.id,
+        homeTeamId: match.homeTeam.id,
+        homeTeamName: match.homeTeam.name,
+        homeTeamEmblemUrl: match.homeTeam.crest,
+        awayTeamId: match.awayTeam.id,
+        awayTeamName: match.awayTeam.name,
+        awayTeamEmblemUrl: match.awayTeam.crest,
+        startTime: match.utcDate,
+        status: match.status,
+        // Use stored odds from the match object
+        oddsHome: match.oddsHome.toNumber(),
+        oddsDraw: match.oddsDraw.toNumber(),
+        oddsAway: match.oddsAway.toNumber(),
+        agentCount: match.predictions.length, // Use actual count of predictions
+      };
 
-        if (league) {
-          league.matches.push(matchDetail);
-        } else {
-          acc.push({
-            leagueId: match.season.league.id,
-            leagueName: match.season.league.name,
-            leagueCode: match.season.league.code,
-            leagueEmblemUrl: match.season.league.emblem,
-            matches: [matchDetail],
-          });
-        }
-        return acc;
-      },
-      [] as LeagueMatchesDto[],
-    );
+      if (league) {
+        league.matches.push(matchDetail);
+      } else {
+        acc.push({
+          leagueId: match.season.league.id,
+          leagueName: match.season.league.name,
+          leagueCode: match.season.league.code,
+          leagueEmblemUrl: match.season.league.emblem,
+          matches: [matchDetail],
+        });
+      }
+      return acc;
+    }, [] as LeagueMatchesDto[]);
 
     return groupedByLeague;
   }
@@ -270,7 +272,11 @@ export class MatchesService {
     matchId: number,
     betAmount: Prisma.Decimal,
     betType: 'HOME_TEAM' | 'DRAW' | 'AWAY_TEAM',
-  ): Promise<{ oddsHome: Prisma.Decimal; oddsDraw: Prisma.Decimal; oddsAway: Prisma.Decimal }> {
+  ): Promise<{
+    oddsHome: Prisma.Decimal;
+    oddsDraw: Prisma.Decimal;
+    oddsAway: Prisma.Decimal;
+  }> {
     const match = await this.prisma.match.findUnique({
       where: { id: matchId },
     });
@@ -304,15 +310,26 @@ export class MatchesService {
     const effectivePoolAway = updatedPoolAway.plus(VIRTUAL_HOME_AWAY_POOL);
 
     // Calculate total effective pool
-    const totalEffectivePool = effectivePoolHome.plus(effectivePoolDraw).plus(effectivePoolAway);
+    const totalEffectivePool = effectivePoolHome
+      .plus(effectivePoolDraw)
+      .plus(effectivePoolAway);
 
     // Commission (10%)
     const commissionMultiplier = new Prisma.Decimal(0.9);
 
     // Calculate new odds based on the effective pools
-    const newOddsHome = totalEffectivePool.times(commissionMultiplier).dividedBy(effectivePoolHome).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-    const newOddsDraw = totalEffectivePool.times(commissionMultiplier).dividedBy(effectivePoolDraw).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-    const newOddsAway = totalEffectivePool.times(commissionMultiplier).dividedBy(effectivePoolAway).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const newOddsHome = totalEffectivePool
+      .times(commissionMultiplier)
+      .dividedBy(effectivePoolHome)
+      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const newOddsDraw = totalEffectivePool
+      .times(commissionMultiplier)
+      .dividedBy(effectivePoolDraw)
+      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const newOddsAway = totalEffectivePool
+      .times(commissionMultiplier)
+      .dividedBy(effectivePoolAway)
+      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 
     // Update the match with the REAL new pools and calculated odds
     await this.prisma.match.update({
@@ -327,7 +344,10 @@ export class MatchesService {
       },
     });
 
-    return { oddsHome: newOddsHome, oddsDraw: newOddsDraw, oddsAway: newOddsAway };
+    return {
+      oddsHome: newOddsHome,
+      oddsDraw: newOddsDraw,
+      oddsAway: newOddsAway,
+    };
   }
 }
-

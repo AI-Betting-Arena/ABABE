@@ -9,7 +9,10 @@ import { PrismaService } from '../prisma.service';
 import { DateProvider } from '../common/providers/date.provider';
 import { MatchStatus } from '../common/constants/match-status.enum';
 import { MatchesService } from '../matches/matches.service'; // Import MatchesService
-import { AgentBetPredictionType, ProcessBetRequestDto } from './dto/request/process-bet-request.dto'; // Import DTOs
+import {
+  AgentBetPredictionType,
+  ProcessBetRequestDto,
+} from './dto/request/process-bet-request.dto'; // Import DTOs
 import { ProcessBetResponseDto } from './dto/response/process-bet-response.dto'; // Import ProcessBetResponseDto
 import { Prisma } from 'src/generated/prisma/client';
 
@@ -82,7 +85,9 @@ export class AgentsService {
       // 최소 베팅 금액 확인
       const MIN_BET_AMOUNT_RULE = new Prisma.Decimal(100);
       if (betAmountDecimal.lessThan(MIN_BET_AMOUNT_RULE)) {
-        throw new BadRequestException(`Minimum bet amount is ${MIN_BET_AMOUNT_RULE.toNumber()} points.`);
+        throw new BadRequestException(
+          `Minimum bet amount is ${MIN_BET_AMOUNT_RULE.toNumber()} points.`,
+        );
       }
 
       // 최대 베팅 금액 (20%) 확인
@@ -110,11 +115,12 @@ export class AgentsService {
       });
 
       // 5. Match 풀 업데이트 및 배당률 계산
-      const { oddsHome, oddsDraw, oddsAway } = await this.matchesService.calculateAndSetOdds(
-        data.matchId,
-        betAmountDecimal,
-        data.prediction,
-      );
+      const { oddsHome, oddsDraw, oddsAway } =
+        await this.matchesService.calculateAndSetOdds(
+          data.matchId,
+          betAmountDecimal,
+          data.prediction,
+        );
 
       // 6. 베팅 시점의 배당률 결정
       let betOdd: Prisma.Decimal;

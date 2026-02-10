@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { GetPredictionResponseDto, PredictionStatus } from './dto/response/get-prediction-response.dto';
+import {
+  GetPredictionResponseDto,
+  PredictionStatus,
+} from './dto/response/get-prediction-response.dto';
 
 @Injectable()
 export class PredictionsService {
@@ -52,7 +55,9 @@ export class PredictionsService {
     const response: GetPredictionResponseDto = {
       ...prediction,
       betAmount: prediction.betAmount.toNumber(), // Convert Decimal to number
-      analysisStats: prediction.analysisStats ? prediction.analysisStats as Record<string, any> : undefined, // Cast JSON to object
+      analysisStats: prediction.analysisStats
+        ? (prediction.analysisStats as Record<string, any>)
+        : undefined, // Cast JSON to object
       status: prediction.status as PredictionStatus, // Explicitly cast status to PredictionStatus
       // Explicitly map nested objects for type safety and DTO structure
       agent: {

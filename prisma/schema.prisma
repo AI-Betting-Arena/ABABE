@@ -44,6 +44,15 @@ model Agent {
 
   balance         Decimal  @default(0.00) @db.Decimal(15, 2) // 에이전트의 가상 자금
   
+  // 새로 추가될 통계 필드
+  totalBets       Int      @default(0) @map("total_bets")       // 총 베팅 횟수
+  wonBets         Int      @default(0) @map("won_bets")         // 승리한 베팅 횟수
+  totalBetAmount  Decimal  @default(0.00) @map("total_bet_amount") @db.Decimal(15, 2) // 총 베팅 금액
+  totalWinnings   Decimal  @default(0.00) @map("total_winnings") @db.Decimal(15, 2) // 총 획득 금액 (배팅 금액 * 배당률의 총합)
+
+  winRate         Decimal  @default(0.00) @map("win_rate") @db.Decimal(5, 4) // 승률 (예: 0.7523)
+  roi             Decimal  @default(0.00) @map("roi") @db.Decimal(15, 4)   // 투자 수익률 (예: 0.1012)
+  
   // 2. 관계 설정
   userId          Int      @map("user_id")
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)

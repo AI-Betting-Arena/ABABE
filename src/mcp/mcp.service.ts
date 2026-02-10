@@ -13,7 +13,6 @@ import { ProcessBetRequestDto } from 'src/agents/dto/request/process-bet-request
 import { ProcessBetResponseDto } from 'src/agents/dto/response/process-bet-response.dto'; // Import ProcessBetResponseDto
 import { SettlementService } from 'src/settlement/settlement.service';
 
-
 @Injectable()
 export class McpService implements OnModuleDestroy {
   private server: Server;
@@ -140,11 +139,15 @@ export class McpService implements OnModuleDestroy {
         tools: [
           {
             name: 'get_weekly_matches',
-            description: 'Retrieves EPL match schedules and information for a specific date range.',
+            description:
+              'Retrieves EPL match schedules and information for a specific date range.',
             inputSchema: {
               type: 'object',
               properties: {
-                from: { type: 'string', description: 'Start date (YYYY-MM-DD)' },
+                from: {
+                  type: 'string',
+                  description: 'Start date (YYYY-MM-DD)',
+                },
                 to: { type: 'string', description: 'End date (YYYY-MM-DD)' },
               },
               required: ['from', 'to'],
@@ -154,7 +157,8 @@ export class McpService implements OnModuleDestroy {
 
           {
             name: 'place_bet',
-            description: 'The AI agent places a bet along with an analysis report.',
+            description:
+              'The AI agent places a bet along with an analysis report.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -174,7 +178,8 @@ export class McpService implements OnModuleDestroy {
                 },
                 summary: {
                   type: 'string',
-                  description: 'Concise summary of the analysis (max 100 characters)',
+                  description:
+                    'Concise summary of the analysis (max 100 characters)',
                 },
                 content: {
                   type: 'string',
@@ -206,7 +211,8 @@ export class McpService implements OnModuleDestroy {
           // Tool to inquire about the AI agent's current betting points.
           {
             name: 'get_betting_points',
-            description: 'The AI agent inquires about its current betting points.',
+            description:
+              'The AI agent inquires about its current betting points.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -219,7 +225,8 @@ export class McpService implements OnModuleDestroy {
           // Add the new tool definition
           {
             name: 'get_betting_rules',
-            description: 'Retrieves the official rules of the ABABE Arena, including betting limits, fees, and settlement methods.',
+            description:
+              'Retrieves the official rules of the ABABE Arena, including betting limits, fees, and settlement methods.',
             inputSchema: {
               type: 'object',
               properties: {},
@@ -245,7 +252,10 @@ export class McpService implements OnModuleDestroy {
 
       if (name === 'place_bet') {
         try {
-          const result: ProcessBetResponseDto = await this.agentsService.processBet(args as unknown as ProcessBetRequestDto);
+          const result: ProcessBetResponseDto =
+            await this.agentsService.processBet(
+              args as unknown as ProcessBetRequestDto,
+            );
 
           return {
             content: [
@@ -257,7 +267,9 @@ export class McpService implements OnModuleDestroy {
           };
         } catch (error) {
           return {
-            content: [{ type: 'text', text: `❌ Betting failed: ${error.message}` }],
+            content: [
+              { type: 'text', text: `❌ Betting failed: ${error.message}` },
+            ],
             isError: true,
           };
         }
@@ -265,8 +277,14 @@ export class McpService implements OnModuleDestroy {
 
       if (name === 'get_betting_points') {
         try {
-          const { agentId, secretKey } = args as { agentId: string; secretKey: string };
-          const balance = await this.agentsService.getAgentBalance(agentId, secretKey);
+          const { agentId, secretKey } = args as {
+            agentId: string;
+            secretKey: string;
+          };
+          const balance = await this.agentsService.getAgentBalance(
+            agentId,
+            secretKey,
+          );
           return {
             content: [
               {
@@ -277,7 +295,12 @@ export class McpService implements OnModuleDestroy {
           };
         } catch (error) {
           return {
-            content: [{ type: 'text', text: `❌ Failed to retrieve betting points: ${error.message}` }],
+            content: [
+              {
+                type: 'text',
+                text: `❌ Failed to retrieve betting points: ${error.message}`,
+              },
+            ],
             isError: true,
           };
         }

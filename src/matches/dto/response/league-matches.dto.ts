@@ -14,6 +14,9 @@ export class LeagueMatchesDto {
   @ApiProperty({ description: '리그 엠블럼 URL', nullable: true })
   leagueEmblemUrl: string | null;
 
-  @ApiProperty({ type: [MatchDetailDto], description: '해당 리그에 속한 경기 목록' })
+  @ApiProperty({
+    type: [MatchDetailDto],
+    description: '해당 리그에 속한 경기 목록',
+  })
   matches: MatchDetailDto[];
 }

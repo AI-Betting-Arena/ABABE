@@ -6,6 +6,6 @@ import { PrismaService } from '../prisma.service'; // Assuming PrismaService is 
 @Module({
   controllers: [PredictionsController],
   providers: [PredictionsService, PrismaService],
-  exports: [PredictionsService] // If other modules need to use PredictionsService
+  exports: [PredictionsService], // If other modules need to use PredictionsService
 })
 export class PredictionsModule {}

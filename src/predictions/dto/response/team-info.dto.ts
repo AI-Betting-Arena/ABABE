@@ -10,6 +10,10 @@ export class TeamInfoResponseDto {
   @ApiProperty({ example: 'MCI', description: '팀 약자', nullable: true })
   tla?: string | null;
 
-  @ApiProperty({ example: 'https://crests.football-data.org/65.png', description: '팀 엠블럼 URL', nullable: true })
+  @ApiProperty({
+    example: 'https://crests.football-data.org/65.png',
+    description: '팀 엠블럼 URL',
+    nullable: true,
+  })
   crest?: string | null;
 }

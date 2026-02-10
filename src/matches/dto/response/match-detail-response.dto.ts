@@ -1,4 +1,3 @@
-
 import { ApiProperty } from '@nestjs/swagger';
 
 class TeamDto {
@@ -78,12 +77,15 @@ export class MatchDetailResponseDto {
   utcDate: Date;
 
   @ApiProperty({ description: '경기 상태 (예: FINISHED, SCHEDULED)' })
-  status: string; 
+  status: string;
 
   @ApiProperty({ description: '매치데이' })
   matchday: number;
 
-  @ApiProperty({ description: '경기 단계 (예: REGULAR_SEASON)', nullable: true })
+  @ApiProperty({
+    description: '경기 단계 (예: REGULAR_SEASON)',
+    nullable: true,
+  })
   stage: string | null;
 
   @ApiProperty({ type: () => TeamDto, description: '홈 팀 정보' })
@@ -92,8 +94,11 @@ export class MatchDetailResponseDto {
   @ApiProperty({ type: () => TeamDto, description: '어웨이 팀 정보' })
   awayTeam: TeamDto;
 
-  @ApiProperty({ description: '경기 승리팀 (HOME_TEAM, AWAY_TEAM, DRAW, null)', nullable: true })
-  winner: string | null; 
+  @ApiProperty({
+    description: '경기 승리팀 (HOME_TEAM, AWAY_TEAM, DRAW, null)',
+    nullable: true,
+  })
+  winner: string | null;
 
   @ApiProperty({ description: '홈 팀 점수', nullable: true })
   homeScore: number | null;
