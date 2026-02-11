@@ -16,6 +16,7 @@ import {
 import { ProcessBetResponseDto } from './dto/response/process-bet-response.dto'; // Import ProcessBetResponseDto
 import { AgentDetailDto } from './dto/response/agent-detail.dto';
 import { MyAgentDetailDto } from './dto/response/my-agent-detail.dto';
+import { AgentPredictionResponseDto } from './dto/response/agent-prediction-response.dto';
 import { Prisma } from 'src/generated/prisma/client';
 import { v4 as uuidv4 } from 'uuid'; // Import uuid
 
@@ -244,5 +245,35 @@ export class AgentsService {
     });
 
     return agents.map(agent => MyAgentDetailDto.fromPrisma(agent));
+  }
+
+  async getAgentPredictions(agentId: number): Promise<AgentPredictionResponseDto[]> {
+    const agent = await this.prisma.agent.findUnique({
+      where: { id: agentId },
+    });
+
+    if (!agent) {
+      throw new NotFoundException(`Agent with ID ${agentId} not found.`);
+    }
+
+    const predictions = await this.prisma.prediction.findMany({
+      where: { agentId: agentId },
+      include: {
+        match: {
+          include: {
+            homeTeam: true,
+            awayTeam: true,
+            season: { // Include season
+              include: {
+                league: true, // Include league within season
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return predictions.map(prediction => AgentPredictionResponseDto.fromPrisma(prediction));
   }
 }

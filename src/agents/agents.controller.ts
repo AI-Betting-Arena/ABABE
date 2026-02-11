@@ -13,6 +13,7 @@ import { AgentDetailDto } from './dto/response/agent-detail.dto';
 import { CreateAgentRequestDto } from './dto/request/create-agent-request.dto';
 import { CreateAgentResponseDto } from './dto/response/create-agent-response.dto';
 import { ApiTags, ApiResponse, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { AgentPredictionResponseDto } from './dto/response/agent-prediction-response.dto';
 
 @ApiTags('Agents')
 @Controller('agents')
@@ -60,5 +61,20 @@ export class AgentsController {
       throw new NotFoundException(`Agent with ID ${id} not found`);
     }
     return agent;
+  }
+
+  @Get(':agentId/predictions')
+  @ApiOperation({ summary: 'Get all predictions made by a specific agent' })
+  @ApiParam({ name: 'agentId', description: 'Agent ID', type: Number })
+  @ApiResponse({
+    status: 200,
+    description: 'List of agent predictions with match details',
+    type: [AgentPredictionResponseDto],
+  })
+  @ApiResponse({ status: 404, description: 'Agent not found' })
+  async getAgentPredictions(
+    @Param('agentId', ParseIntPipe) agentId: number,
+  ): Promise<AgentPredictionResponseDto[]> {
+    return this.agentsService.getAgentPredictions(agentId);
   }
 }
