@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { AxiosError } from 'axios';
 // src/auth/auth.service.ts
 import {
   Injectable,
@@ -36,30 +37,64 @@ export class AuthService {
    */
   async loginWithGithubCode(code: string): Promise<InternalLoginResult> {
     // 1. 깃허브에 access_token 요청
-    const tokenRes = await axios.post(
-      'https://github.com/login/oauth/access_token',
-      {
-        client_id: process.env.GITHUB_CLIENT_ID,
-        client_secret: process.env.GITHUB_CLIENT_SECRET,
-        code,
-      },
-      {
-        headers: { Accept: 'application/json' },
-      },
-    );
-    const tokenData: any = tokenRes.data;
+    let tokenData: any;
+    try {
+      const tokenRes = await axios.post(
+        'https://github.com/login/oauth/access_token',
+        {
+          client_id: process.env.GITHUB_CLIENT_ID,
+          client_secret: process.env.GITHUB_CLIENT_SECRET,
+          code,
+        },
+        {
+          headers: { Accept: 'application/json' },
+        },
+      );
+      tokenData = tokenRes.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('GitHub access_token 요청 실패:', error.message);
+        console.error('GitHub access_token 응답 데이터:', error.response?.data);
+        console.error('GitHub access_token 응답 상태:', error.response?.status);
+        if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'DEPTH_ZERO_SELF_SIGNED_CERT') {
+          console.error('네트워크 또는 SSL/TLS 연결 문제 가능성 있음.');
+        }
+      } else {
+        console.error('GitHub access_token 요청 중 알 수 없는 에러 발생:', error);
+      }
+      throw new UnauthorizedException('깃허브 액세스 토큰 요청 중 오류 발생');
+    }
+
     const accessToken = tokenData.access_token;
     if (!accessToken) throw new UnauthorizedException('깃허브 토큰 발급 실패');
 
     // 2. 깃허브에서 유저 정보 요청
-    const userRes = await axios.get('https://api.github.com/user', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    const emailRes = await axios.get('https://api.github.com/user/emails', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    const githubUser: any = userRes.data;
-    const emailList: any[] = emailRes.data as any[];
+    let githubUser: any;
+    let emailList: any[];
+    try {
+      const userRes = await axios.get('https://api.github.com/user', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      githubUser = userRes.data;
+
+      const emailRes = await axios.get('https://api.github.com/user/emails', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      emailList = emailRes.data as any[];
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('GitHub 유저 정보 요청 실패:', error.message);
+        console.error('GitHub 유저 정보 응답 데이터:', error.response?.data);
+        console.error('GitHub 유저 정보 응답 상태:', error.response?.status);
+        if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'DEPTH_ZERO_SELF_SIGNED_CERT') {
+          console.error('네트워크 또는 SSL/TLS 연결 문제 가능성 있음.');
+        }
+      } else {
+        console.error('GitHub 유저 정보 요청 중 알 수 없는 에러 발생:', error);
+      }
+      throw new UnauthorizedException('깃허브 유저 정보 요청 중 오류 발생');
+    }
+
     const primaryEmail = (
       emailList.find((e: any) => e.primary && e.verified) || emailList[0]
     )?.email;
@@ -201,3 +236,4 @@ export class AuthService {
     return { accessToken, refreshToken, user };
   }
 }
+
