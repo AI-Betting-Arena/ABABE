@@ -13,12 +13,12 @@ import { ProcessBetRequestDto } from 'src/agents/dto/request/process-bet-request
 import { ProcessBetResponseDto } from 'src/agents/dto/response/process-bet-response.dto'; // Import ProcessBetResponseDto
 import { SettlementService } from 'src/settlement/settlement.service';
 import { DateProvider } from 'src/common/providers/date.provider'; // Import DateProvider
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class McpService implements OnModuleDestroy {
-  private server: Server;
-  // SSE can have multiple connections, so it's necessary to manage the transport.
-  private transport: SSEServerTransport | null = null;
+  private readonly activeServers = new Map<string, Server>();
+
 
   constructor(
     private readonly matchesService: MatchesService,
@@ -26,18 +26,7 @@ export class McpService implements OnModuleDestroy {
     private readonly settlementService: SettlementService,
     private readonly dateProvider: DateProvider, // Inject DateProvider
   ) {
-    this.server = new Server(
-      {
-        name: 'ababe-arena-mcp',
-        version: '1.0.0',
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      },
-    );
-    this.setupHandlers();
+
   }
 
   async settleLastWeekMatches(): Promise<string> {
@@ -49,13 +38,39 @@ export class McpService implements OnModuleDestroy {
 
   // 1. SSE 연결 핸들러
   async handleSse(req: Request, res: Response) {
-    // "/mcp/messages" is the endpoint address to send messages later.
-    this.transport = new SSEServerTransport('/api/v1/mcp/messages', res);
-    await this.server.connect(this.transport);
+    const connectionId = uuidv4(); // Generate unique ID
+
+    // Create a new Server instance for each connection
+    const server = new Server(
+      {
+        name: 'ababe-arena-mcp',
+        version: '1.0.0',
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
+      },
+    );
+    this.setupHandlersForInstance(server); // Setup handlers for this specific server
+
+    // Send the connection ID to the client as a custom header BEFORE the transport takes over the response.
+    res.setHeader('X-Mcp-Connection-Id', connectionId);
+    // Note: client-side needs to read this header and include it in subsequent POST requests.
+
+    const transport = new SSEServerTransport('/api/v1/mcp/messages', res);
+    await server.connect(transport); // Connect after setting headers and creating transport
+
+    this.activeServers.set(connectionId, server); // Store the server instance with connectionId
 
     // Handle when the connection is lost.
-    req.on('close', () => {
-      this.transport = null;
+    req.on('close', async () => {
+      const closedServer = this.activeServers.get(connectionId); // Use connectionId for lookup
+      if (closedServer) {
+        await closedServer.close(); // Close the specific server instance for this client
+        this.activeServers.delete(connectionId); // Remove from map
+        console.log('SSE connection closed and server instance disconnected for ID:', connectionId);
+      }
     });
   }
 
@@ -63,14 +78,22 @@ export class McpService implements OnModuleDestroy {
   // src/mcp/mcp.service.ts
 
   async handleMessage(req: Request, res: Response) {
-    if (!this.transport) {
-      res.status(400).send('No SSE connection established');
+    const connectionId = req.headers['x-mcp-connection-id'] as string; // Get connection ID from header
+
+    if (!connectionId) {
+      res.status(400).send('Missing X-Mcp-Connection-Id header.');
+      return;
+    }
+
+    const server = this.activeServers.get(connectionId); // Get the specific server instance
+    if (!server) {
+      res.status(400).send('No active SSE connection found for the provided ID.');
       return;
     }
 
     try {
       // 💡 Allow SSE transport to handle POST requests.
-      await this.transport.handlePostMessage(req, res);
+      await (server.transport as SSEServerTransport).handlePostMessage(req, res);
     } catch (error) {
       console.error('MCP Message Error:', error);
       // 💡 Initialize stream state or clarify error response when an error occurs.
@@ -135,9 +158,9 @@ export class McpService implements OnModuleDestroy {
     };
   }
 
-  private setupHandlers() {
+  private setupHandlersForInstance(server: Server) {
     // List of tools to provide to the AI.
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+    server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: [
           {
@@ -240,7 +263,7 @@ export class McpService implements OnModuleDestroy {
     });
 
     // Tool execution logic.
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
 
       if (name === 'get_weekly_matches') {
@@ -330,6 +353,10 @@ export class McpService implements OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    await this.server.close();
+    // Close all active server connections
+    for (const server of this.activeServers.values()) {
+      await server.close();
+    }
+    this.activeServers.clear();
   }
 }
