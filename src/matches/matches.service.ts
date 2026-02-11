@@ -99,8 +99,8 @@ export class MatchesService {
             league: true,
           },
         },
-        homeTeam: true,
-        awayTeam: true,
+        homeTeam: { select: { id: true, name: true, shortName: true, crest: true } },
+        awayTeam: { select: { id: true, name: true, shortName: true, crest: true } },
         predictions: {
           // Include predictions to count them
           select: { id: true },
@@ -121,10 +121,10 @@ export class MatchesService {
       const matchDetail: MatchDetailDto = {
         id: match.id,
         homeTeamId: match.homeTeam.id,
-        homeTeamName: match.homeTeam.name,
+        homeTeamName: match.homeTeam.shortName ?? match.homeTeam.name,
         homeTeamEmblemUrl: match.homeTeam.crest,
         awayTeamId: match.awayTeam.id,
-        awayTeamName: match.awayTeam.name,
+        awayTeamName: match.awayTeam.shortName ?? match.awayTeam.name,
         awayTeamEmblemUrl: match.awayTeam.crest,
         startTime: match.utcDate,
         status: match.status,

@@ -55,64 +55,59 @@ export class AgentsService {
   }
 
   async processBet(data: ProcessBetRequestDto): Promise<ProcessBetResponseDto> {
-    // 💡 Prisma 트랜잭션 시작
-    return await this.prisma.$transaction(async (tx) => {
-      // 1. 에이전트 존재 여부 및 비밀키 확인
-      const agent = await tx.agent.findUnique({
-        where: { agentId: data.agentId },
-      });
-
-      if (!agent) {
-        throw new UnauthorizedException('Agent not found.');
-      }
-
-      if (agent.secretKey !== data.secretKey) {
-        throw new UnauthorizedException('Invalid secret key.');
-      }
-
-      // 2. 경기 정보 조회 및 베팅 가능 여부 확인
-      const match = await tx.match.findUnique({
-        where: { id: data.matchId },
-      });
-
-      if (!match) {
-        throw new NotFoundException(`Match with ID ${data.matchId} not found.`);
-      }
-
-      // 2-1. 1차: DB에 저장된 상태 값으로 베팅 불가 여부 확인
-      if (
-        match.status === MatchStatus.UPCOMING ||
-        match.status === MatchStatus.BETTING_CLOSED ||
-        match.status === MatchStatus.SETTLED
-      ) {
-        throw new BadRequestException(
-          `Betting for this match is not allowed. Status: ${match.status}`,
-        );
-      }
-
-      // 2-2. 2차: 시간 계산으로 마감 여부 확인 (BETTING_OPEN 상태일 때만 의미 있음)
-      const now = this.dateProvider.now();
-      const tenMinutesInMillis = 10 * 60 * 1000;
-      const bettingDeadline = new Date(
-        match.utcDate.getTime() - tenMinutesInMillis,
-      );
-
-      if (now >= bettingDeadline) {
-        // Lazy Update: 마감 시간이 지났다면, 상태를 BETTING_CLOSED로 변경하고 예외 발생
-        await tx.match.update({
-          where: { id: data.matchId },
-          data: { status: MatchStatus.BETTING_CLOSED },
+        // 1. 에이전트 존재 여부 및 비밀키 확인 (트랜잭션 외부에서 수행)
+        const agent = await this.prisma.agent.findUnique({
+          where: { agentId: data.agentId },
         });
-        throw new BadRequestException(
-          'Betting deadline has passed for this match.',
+    
+        if (!agent) {
+          throw new UnauthorizedException('Agent not found.');
+        }
+    
+        if (agent.secretKey !== data.secretKey) {
+          throw new UnauthorizedException('Invalid secret key.');
+        }
+    
+        // 2. 경기 정보 조회 및 마감 여부 확인 (트랜잭션 외부에서 수행, 상태 업데이트 포함)
+        let match = await this.prisma.match.findUnique({
+          where: { id: data.matchId },
+        });
+    
+        if (!match) {
+          throw new NotFoundException(`Match with ID ${data.matchId} not found.`);
+        }
+    
+        const now = this.dateProvider.now();
+        const tenMinutesInMillis = 10 * 60 * 1000;
+        const bettingDeadline = new Date(
+          match.utcDate.getTime() - tenMinutesInMillis,
         );
-      }
-
-      // 3. 잔액 및 베팅량 조건 확인 (Decimal 계산 주의)
-      const betAmountDecimal = new Prisma.Decimal(data.betAmount);
-      const currentBalanceDecimal = agent.balance;
-
-      // 최소 베팅 금액 확인
+    
+        // 마감 시간이 지났고, 아직 BETTING_CLOSED가 아니라면 업데이트 (트랜잭션 외부에서 즉시 커밋)
+        if (now >= bettingDeadline && match.status !== MatchStatus.BETTING_CLOSED) {
+          match = await this.prisma.match.update({ // match 객체를 갱신
+            where: { id: data.matchId },
+            data: { status: MatchStatus.BETTING_CLOSED },
+          });
+        }
+    
+        // 통합된 상태 체크 로직
+        if (
+          match.status === MatchStatus.UPCOMING ||
+          match.status === MatchStatus.BETTING_CLOSED ||
+          match.status === MatchStatus.SETTLED
+        ) {
+          throw new BadRequestException(
+            `Betting for this match is not allowed. Status: ${match.status}`,
+          );
+        }
+    
+        // 💡 Prisma 트랜잭션 시작 (베팅 처리 로직만 포함)
+        return await this.prisma.$transaction(async (tx) => {
+          // 3. 잔액 및 베팅량 조건 확인 (Decimal 계산 주의)
+          const betAmountDecimal = new Prisma.Decimal(data.betAmount);
+          const currentBalanceDecimal = agent.balance;
+          // 최소 베팅 금액 확인
       const MIN_BET_AMOUNT_RULE = new Prisma.Decimal(100);
       if (betAmountDecimal.lessThan(MIN_BET_AMOUNT_RULE)) {
         throw new BadRequestException(
