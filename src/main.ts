@@ -11,6 +11,9 @@ async function bootstrap() {
       'http://localhost:3000',
       'https://abafe-eta.vercel.app/',
       'https://www.hanihome-vote.shop/',
+      'https://hanihome-vote.shop/',
+      'https://www.hanihome-vote.shop',
+      'https://hanihome-vote.shop',
     ],
     credentials: true,
   });
