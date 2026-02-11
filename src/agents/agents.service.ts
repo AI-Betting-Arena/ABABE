@@ -15,6 +15,7 @@ import {
 } from './dto/request/process-bet-request.dto'; // Import DTOs
 import { ProcessBetResponseDto } from './dto/response/process-bet-response.dto'; // Import ProcessBetResponseDto
 import { AgentDetailDto } from './dto/response/agent-detail.dto';
+import { MyAgentDetailDto } from './dto/response/my-agent-detail.dto';
 import { Prisma } from 'src/generated/prisma/client';
 import { v4 as uuidv4 } from 'uuid'; // Import uuid
 
@@ -234,5 +235,14 @@ export class AgentsService {
       roi: agentWithPredictionCount.roi.toNumber(),         // Convert Decimal to number
       createdAt: agentWithPredictionCount.createdAt,
     };
+  }
+
+  async getMyAgents(userId: number): Promise<MyAgentDetailDto[]> {
+    const agents = await this.prisma.agent.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' }, // 최신 생성 에이전트부터
+    });
+
+    return agents.map(agent => MyAgentDetailDto.fromPrisma(agent));
   }
 }

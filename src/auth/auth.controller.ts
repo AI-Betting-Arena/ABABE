@@ -9,7 +9,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { ApiTags, ApiBody, ApiResponse, ApiOperation } from '@nestjs/swagger';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterRequestDto } from './dto/request/register-request.dto';
 import { LoginRequestDto } from './dto/request/login-request.dto';
@@ -41,7 +41,7 @@ export class AuthController {
 
   /**
    * [로그인]
-   * AccessToken은 쿠키로, 나머지는 DTO로 반환
+   * AccessToken은 DTO로 반환
    */
   @Post('login')
   @ApiOperation({ summary: '로그인', description: '로그인 시도 및 토큰 발급' })
@@ -54,15 +54,16 @@ export class AuthController {
   async login(
     @Body() loginDto: LoginRequestDto,
     @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
   ): Promise<LoginResponseDto> {
     const result = await this.authService.login(loginDto);
 
-    // Access Token 쿠키 세팅 (HttpOnly로 보안 강화)
-    res.cookie('accessToken', result.accessToken, {
+    // Refresh Token 쿠키 세팅 (HttpOnly로 보안 강화)
+    res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
-      secure: false, // 로컬 개발 환경
-      sameSite: 'lax',
-      maxAge: 3600000, // 1시간
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
     });
 
     // 정적 팩터리 메서드로 응답 DTO 생성
@@ -111,13 +112,15 @@ export class AuthController {
   async githubTokenLogin(
     @Body('code') code: string,
     @Res({ passthrough: true }) res: Response,
+    @Req() req: Request, // Inject Request object
   ): Promise<LoginResponseDto> {
     const result = await this.authService.loginWithGithubCode(code);
-    res.cookie('accessToken', result.accessToken, {
+
+    res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 3600000,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
     });
     return LoginResponseDto.from(result);
   }

@@ -20,7 +20,7 @@ export class AuthMiddleware implements NestMiddleware {
 
   async use(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const accessToken = this.extractTokenFromCookie(req);
+      const accessToken = this.extractTokenFromHeader(req);
       if (!accessToken) {
         throw new UnauthorizedException('Access token not found');
       }
@@ -41,16 +41,8 @@ export class AuthMiddleware implements NestMiddleware {
     }
   }
 
-  private extractTokenFromCookie(req: Request): string | undefined {
-    const cookieHeader = req.headers.cookie;
-    if (!cookieHeader) return undefined;
-
-    const cookies = cookieHeader.split('; ').reduce((acc, cookie) => {
-      const [name, value] = cookie.trim().split('='); // .trim() 추가
-      acc[name] = value;
-      return acc;
-    }, {});
-
-    return cookies['accessToken'];
+  private extractTokenFromHeader(req: Request): string | undefined {
+    const [type, token] = req.headers.authorization?.split(' ') ?? [];
+    return type === 'Bearer' ? token : undefined;
   }
 }
