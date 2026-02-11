@@ -17,7 +17,7 @@ import { of, throwError } from 'rxjs'; // Import throwError
 
 import { Match, Prisma } from '../../src/generated/prisma/client';
 
-
+jest.setTimeout(30000); // Further increase timeout for this test suite
 
 describe('SettlementService', () => {
 

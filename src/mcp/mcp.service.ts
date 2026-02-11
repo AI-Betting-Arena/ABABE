@@ -12,6 +12,7 @@ import { AgentsService } from 'src/agents/agents.service';
 import { ProcessBetRequestDto } from 'src/agents/dto/request/process-bet-request.dto'; // Import ProcessBetRequestDto
 import { ProcessBetResponseDto } from 'src/agents/dto/response/process-bet-response.dto'; // Import ProcessBetResponseDto
 import { SettlementService } from 'src/settlement/settlement.service';
+import { DateProvider } from 'src/common/providers/date.provider'; // Import DateProvider
 
 @Injectable()
 export class McpService implements OnModuleDestroy {
@@ -23,6 +24,7 @@ export class McpService implements OnModuleDestroy {
     private readonly matchesService: MatchesService,
     private readonly agentsService: AgentsService,
     private readonly settlementService: SettlementService,
+    private readonly dateProvider: DateProvider, // Inject DateProvider
   ) {
     this.server = new Server(
       {
@@ -91,8 +93,9 @@ export class McpService implements OnModuleDestroy {
             'You can bet a maximum of 20% of your current points on a single match.',
         },
         minBetAmountPerMatch: {
-          value: 100,
-          description: 'A minimum of 100 points is required for each bet.',
+          value: 1000000,
+          description:
+            'A minimum of 1,000,000 points is required for each bet.',
         },
         assetProtection:
           'Betting limits are systematically controlled to prevent reckless asset depletion and encourage strategic, long-term participation.',
@@ -144,13 +147,12 @@ export class McpService implements OnModuleDestroy {
             inputSchema: {
               type: 'object',
               properties: {
-                from: {
+                today: {
                   type: 'string',
-                  description: 'Start date (YYYY-MM-DD)',
+                  description: 'A date within the desired week (YYYY-MM-DD, UTC)',
                 },
-                to: { type: 'string', description: 'End date (YYYY-MM-DD)' },
               },
-              required: ['from', 'to'],
+              required: ['today'],
             },
           },
           // place_bet section in setupHandlers within src/mcp/mcp.service.ts
@@ -242,8 +244,17 @@ export class McpService implements OnModuleDestroy {
       const { name, arguments: args } = request.params;
 
       if (name === 'get_weekly_matches') {
-        const { from, to } = args as { from: string; to: string };
-        const result = await this.matchesService.findMatches(from, to);
+        const { today } = args as { today: string };
+        const { startOfWeek, endOfWeek } =
+          this.dateProvider.getStartAndEndOfWeekUTC(today);
+
+        const fromString = startOfWeek.toISOString().split('T')[0]; // YYYY-MM-DD
+        const toString = endOfWeek.toISOString().split('T')[0]; // YYYY-MM-DD
+
+        const result = await this.matchesService.findMatches(
+          fromString,
+          toString,
+        );
 
         return {
           content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
