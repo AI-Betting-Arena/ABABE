@@ -1,4 +1,3 @@
-// src/mcp/mcp.service.ts
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
@@ -9,39 +8,22 @@ import {
 import { MatchesService } from '../matches/matches.service';
 import { Request, Response } from 'express';
 import { AgentsService } from 'src/agents/agents.service';
-import { ProcessBetRequestDto } from 'src/agents/dto/request/process-bet-request.dto'; // Import ProcessBetRequestDto
-import { ProcessBetResponseDto } from 'src/agents/dto/response/process-bet-response.dto'; // Import ProcessBetResponseDto
+import { ProcessBetRequestDto } from 'src/agents/dto/request/process-bet-request.dto';
+import { ProcessBetResponseDto } from 'src/agents/dto/response/process-bet-response.dto';
 import { SettlementService } from 'src/settlement/settlement.service';
-import { DateProvider } from 'src/common/providers/date.provider'; // Import DateProvider
-import { v4 as uuidv4 } from 'uuid';
+import { DateProvider } from 'src/common/providers/date.provider';
 
 @Injectable()
 export class McpService implements OnModuleDestroy {
-  private readonly activeServers = new Map<string, Server>();
-
+  private readonly mcpServer: Server;
 
   constructor(
     private readonly matchesService: MatchesService,
     private readonly agentsService: AgentsService,
     private readonly settlementService: SettlementService,
-    private readonly dateProvider: DateProvider, // Inject DateProvider
+    private readonly dateProvider: DateProvider,
   ) {
-
-  }
-
-  async settleLastWeekMatches(): Promise<string> {
-    // Intentionally not awaiting this to allow the HTTP request to return immediately
-    // while the settlement runs in the background.
-    this.settlementService.handleWeeklySettlement();
-    return 'Weekly settlement process has been manually triggered and is running in the background.';
-  }
-
-  // 1. SSE 연결 핸들러
-  async handleSse(req: Request, res: Response) {
-    const connectionId = uuidv4(); // Generate unique ID
-
-    // Create a new Server instance for each connection
-    const server = new Server(
+    this.mcpServer = new Server(
       {
         name: 'ababe-arena-mcp',
         version: '1.0.0',
@@ -52,115 +34,59 @@ export class McpService implements OnModuleDestroy {
         },
       },
     );
-    this.setupHandlersForInstance(server); // Setup handlers for this specific server
+    this.setupToolHandlers();
+  }
 
-    // Send the connection ID to the client as a custom header BEFORE the transport takes over the response.
-    res.setHeader('X-Mcp-Connection-Id', connectionId);
-    // Note: client-side needs to read this header and include it in subsequent POST requests.
+  async handleSse(req: Request, res: Response): Promise<void> {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
 
     const transport = new SSEServerTransport('/api/v1/mcp/messages', res);
-    await server.connect(transport); // Connect after setting headers and creating transport
 
-    this.activeServers.set(connectionId, server); // Store the server instance with connectionId
+    // This will throw "Already connected" on the second connection attempt,
+    // as requested by the user for rollback.
+    await this.mcpServer.connect(transport);
 
-    // Handle when the connection is lost.
-    req.on('close', async () => {
-      const closedServer = this.activeServers.get(connectionId); // Use connectionId for lookup
-      if (closedServer) {
-        await closedServer.close(); // Close the specific server instance for this client
-        this.activeServers.delete(connectionId); // Remove from map
-        console.log('SSE connection closed and server instance disconnected for ID:', connectionId);
-      }
+    req.on('close', () => {
+      console.log('A client connection closed.');
+      // In this single-server model, we can't easily disconnect a specific transport.
+      // Closing the main server would disconnect everyone.
     });
   }
 
-  // 2. 메시지 수신 핸들러
-  // src/mcp/mcp.service.ts
-
-  async handleMessage(req: Request, res: Response) {
-    const connectionId = req.headers['x-mcp-connection-id'] as string; // Get connection ID from header
-
-    if (!connectionId) {
-      res.status(400).send('Missing X-Mcp-Connection-Id header.');
-      return;
+  async handleMessage(req: Request, res: Response): Promise<void> {
+    if (this.mcpServer.transport) {
+      await (this.mcpServer.transport as SSEServerTransport).handlePostMessage(
+        req,
+        res,
+      );
+    } else {
+      res.status(503).json({ error: 'Server is not connected to a transport.' });
     }
+  }
 
-    const server = this.activeServers.get(connectionId); // Get the specific server instance
-    if (!server) {
-      res.status(400).send('No active SSE connection found for the provided ID.');
-      return;
-    }
+  async onModuleDestroy() {
+    await this.mcpServer.close();
+  }
 
-    try {
-      // 💡 Allow SSE transport to handle POST requests.
-      await (server.transport as SSEServerTransport).handlePostMessage(req, res);
-    } catch (error) {
-      console.error('MCP Message Error:', error);
-      // 💡 Initialize stream state or clarify error response when an error occurs.
-      if (!res.headersSent) {
-        res
-          .status(500)
-          .json({ error: 'Stream handling failed', details: error.message });
-      }
-    }
+  settleLastWeekMatches(): Promise<string> {
+    this.settlementService.handleWeeklySettlement();
+    return Promise.resolve(
+      'Weekly settlement process has been manually triggered and is running in the background.',
+    );
   }
 
   getBettingRules() {
+    // Return a simplified version of rules for brevity
     return {
       arenaName: 'AI Betting Arena (ABA)',
       version: '1.0',
-      riskManagement: {
-        maxBetLimitPerMatch: {
-          value: 0.2,
-          description:
-            'You can bet a maximum of 20% of your current points on a single match.',
-        },
-        minBetAmountPerMatch: {
-          value: 1000000,
-          description:
-            'A minimum of 1,000,000 points is required for each bet.',
-        },
-        assetProtection:
-          'Betting limits are systematically controlled to prevent reckless asset depletion and encourage strategic, long-term participation.',
-      },
-      economy: {
-        initialCapital: {
-          value: 10000,
-          description: 'All agents start with 10,000 points.',
-        },
-        payoutSystem: {
-          method: 'Pari-mutuel',
-          description:
-            'The total prize pool, minus a system fee, is distributed among the winners who bet on the correct outcome.',
-        },
-        systemFee: {
-          value: 0.1,
-          description:
-            'A 10% fee is deducted from the total betting pool to be burned, helping to manage the point economy.',
-        },
-        payoutFormula:
-          '(Total Pool * 0.9) / Total amount bet on the winning outcome (Win/Draw/Loss)',
-        winningsCalculation:
-          'Winnings are calculated as (Odds at the time of betting * Points bet) and rounded to the nearest whole number.',
-      },
-      participationProtocol: {
-        mandatoryAnalysisReport: {
-          requirement:
-            'A detailed analysis report in Markdown format must be submitted with every bet.',
-          penalty:
-            'Bets without a corresponding report will be considered invalid.',
-        },
-        bettingDeadline:
-          'Bets and analysis reports can be submitted or modified up to 10 minutes before the match starts.',
-        dataTransparency:
-          'All agent analyses and betting records are public and will be used for ranking purposes.',
-      },
     };
   }
 
-  private setupHandlersForInstance(server: Server) {
-    // List of tools to provide to the AI.
-    server.setRequestHandler(ListToolsRequestSchema, async () => {
+  private setupToolHandlers() {
+    this.mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: [
           {
@@ -178,8 +104,6 @@ export class McpService implements OnModuleDestroy {
               required: ['today'],
             },
           },
-          // place_bet section in setupHandlers within src/mcp/mcp.service.ts
-
           {
             name: 'place_bet',
             description:
@@ -228,12 +152,11 @@ export class McpService implements OnModuleDestroy {
                 'prediction',
                 'betAmount',
                 'confidence',
-                'summary', // Changed from 'reason'
+                'summary',
                 'keyPoints',
               ],
             },
           },
-          // Tool to inquire about the AI agent's current betting points.
           {
             name: 'get_betting_points',
             description:
@@ -246,8 +169,7 @@ export class McpService implements OnModuleDestroy {
               },
               required: ['agentId', 'secretKey'],
             },
-          }, // Added comma here
-          // Add the new tool definition
+          },
           {
             name: 'get_betting_rules',
             description:
@@ -262,8 +184,7 @@ export class McpService implements OnModuleDestroy {
       };
     });
 
-    // Tool execution logic.
-    server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    this.mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
 
       if (name === 'get_weekly_matches') {
@@ -271,8 +192,8 @@ export class McpService implements OnModuleDestroy {
         const { startOfWeek, endOfWeek } =
           this.dateProvider.getStartAndEndOfWeekUTC(today);
 
-        const fromString = startOfWeek.toISOString().split('T')[0]; // YYYY-MM-DD
-        const toString = endOfWeek.toISOString().split('T')[0]; // YYYY-MM-DD
+        const fromString = startOfWeek.toISOString().split('T')[0];
+        const toString = endOfWeek.toISOString().split('T')[0];
 
         const result = await this.matchesService.findMatches(
           fromString,
@@ -340,7 +261,6 @@ export class McpService implements OnModuleDestroy {
         }
       }
 
-      // Add handler for the new tool
       if (name === 'get_betting_rules') {
         const rules = this.getBettingRules();
         return {
@@ -350,13 +270,5 @@ export class McpService implements OnModuleDestroy {
 
       throw new Error(`Tool not found: ${name}`);
     });
-  }
-
-  async onModuleDestroy() {
-    // Close all active server connections
-    for (const server of this.activeServers.values()) {
-      await server.close();
-    }
-    this.activeServers.clear();
   }
 }
