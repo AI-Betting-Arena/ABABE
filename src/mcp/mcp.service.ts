@@ -12,10 +12,33 @@ import { ProcessBetRequestDto } from 'src/agents/dto/request/process-bet-request
 import { ProcessBetResponseDto } from 'src/agents/dto/response/process-bet-response.dto';
 import { SettlementService } from 'src/settlement/settlement.service';
 import { DateProvider } from 'src/common/providers/date.provider';
+import { randomUUID } from 'crypto';
 
+/**
+ * [PRINCIPLE: SRP] MCP Service - Per-Connection Server Management
+ *
+ * Previous issue: Single Server instance caused "Already connected" error
+ * when multiple clients attempted SSE connections.
+ *
+ * Solution: Each SSE connection gets its own Server instance stored in a Map.
+ * Server.connect() enforces 1:1 binding between Server and Transport.
+ *
+ * Why this works: MCP SDK documentation shows Server instances should be
+ * created per-request for stateless operation, or Transport should be reused
+ * for stateful sessions. SSE creates new Transport per connection, so we
+ * create new Server per connection.
+ */
 @Injectable()
 export class McpService implements OnModuleDestroy {
-  private readonly mcpServer: Server;
+  /**
+   * Map of active connections: connectionId -> { server, transport }
+   * Each SSE connection maintains its own Server instance to avoid
+   * "Already connected to a transport" errors.
+   */
+  private readonly connections = new Map<
+    string,
+    { server: Server; transport: SSEServerTransport }
+  >();
 
   constructor(
     private readonly matchesService: MatchesService,
@@ -23,51 +46,108 @@ export class McpService implements OnModuleDestroy {
     private readonly settlementService: SettlementService,
     private readonly dateProvider: DateProvider,
   ) {
-    this.mcpServer = new Server(
-      {
-        name: 'ababe-arena-mcp',
-        version: '1.0.0',
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      },
-    );
-    this.setupToolHandlers();
+    // No longer creating a single shared Server instance
+    // Each connection will create its own via createServerInstance()
   }
 
+  /**
+   * [PRINCIPLE: SRP] Handle SSE connection - creates isolated Server per client
+   *
+   * Each SSE connection receives:
+   * 1. Unique connectionId for tracking
+   * 2. Dedicated Server instance (avoids "Already connected" error)
+   * 3. SSEServerTransport bound to this Server
+   * 4. Cleanup handler on connection close
+   */
   async handleSse(req: Request, res: Response): Promise<void> {
+    const connectionId = randomUUID();
+
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
+    // Create a new Server instance for this connection
+    const server = this.createServerInstance();
     const transport = new SSEServerTransport('/api/v1/mcp/messages', res);
 
-    // This will throw "Already connected" on the second connection attempt,
-    // as requested by the user for rollback.
-    await this.mcpServer.connect(transport);
+    // Connect Server to Transport (1:1 binding)
+    await server.connect(transport);
 
-    req.on('close', () => {
-      console.log('A client connection closed.');
-      // In this single-server model, we can't easily disconnect a specific transport.
-      // Closing the main server would disconnect everyone.
+    // Store connection for tracking and cleanup
+    this.connections.set(connectionId, { server, transport });
+    console.log(
+      `MCP SSE connection established: ${connectionId} (total: ${this.connections.size})`,
+    );
+
+    // Cleanup on client disconnect
+    req.on('close', async () => {
+      console.log(`MCP SSE connection closed: ${connectionId}`);
+      const connection = this.connections.get(connectionId);
+
+      if (connection) {
+        try {
+          // Close Server (also closes Transport)
+          await connection.server.close();
+        } catch (error) {
+          console.error(
+            `Error closing connection ${connectionId}:`,
+            error.message,
+          );
+        } finally {
+          // Always remove from map
+          this.connections.delete(connectionId);
+          console.log(
+            `MCP connection cleaned up: ${connectionId} (remaining: ${this.connections.size})`,
+          );
+        }
+      }
     });
   }
 
+  /**
+   * Handle POST /messages endpoint
+   *
+   * Routes message to the first active SSE connection's transport.
+   * In typical usage, there's one active SSE connection per client session.
+   */
   async handleMessage(req: Request, res: Response): Promise<void> {
-    if (this.mcpServer.transport) {
-      await (this.mcpServer.transport as SSEServerTransport).handlePostMessage(
-        req,
-        res,
-      );
+    // Get the first active connection
+    const connection = Array.from(this.connections.values())[0];
+
+    if (connection?.transport) {
+      await connection.transport.handlePostMessage(req, res);
     } else {
-      res.status(503).json({ error: 'Server is not connected to a transport.' });
+      res.status(503).json({
+        error: 'No active MCP connection. Please establish SSE connection first.',
+      });
     }
   }
 
+  /**
+   * Cleanup all active connections on module shutdown
+   */
   async onModuleDestroy() {
-    await this.mcpServer.close();
+    console.log(
+      `McpService shutting down: closing ${this.connections.size} active connections`,
+    );
+
+    const closePromises = Array.from(this.connections.entries()).map(
+      async ([connectionId, connection]) => {
+        try {
+          await connection.server.close();
+          console.log(`Closed connection: ${connectionId}`);
+        } catch (error) {
+          console.error(
+            `Error closing connection ${connectionId}:`,
+            error.message,
+          );
+        }
+      },
+    );
+
+    await Promise.all(closePromises);
+    this.connections.clear();
+    console.log('McpService shutdown complete');
   }
 
   settleLastWeekMatches(): Promise<string> {
@@ -85,8 +165,37 @@ export class McpService implements OnModuleDestroy {
     };
   }
 
-  private setupToolHandlers() {
-    this.mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
+  /**
+   * [PRINCIPLE: DRY] Create a new Server instance with all tool handlers
+   *
+   * Each connection needs its own Server instance, but they all share
+   * the same tool definitions. This method centralizes Server creation
+   * to avoid code duplication.
+   */
+  private createServerInstance(): Server {
+    const server = new Server(
+      {
+        name: 'ababe-arena-mcp',
+        version: '1.0.0',
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
+      },
+    );
+
+    this.setupToolHandlers(server);
+    return server;
+  }
+
+  /**
+   * Setup tool handlers for a Server instance
+   *
+   * @param server - The Server instance to configure
+   */
+  private setupToolHandlers(server: Server) {
+    server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: [
           {
@@ -184,7 +293,7 @@ export class McpService implements OnModuleDestroy {
       };
     });
 
-    this.mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
+    server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
 
       if (name === 'get_weekly_matches') {
