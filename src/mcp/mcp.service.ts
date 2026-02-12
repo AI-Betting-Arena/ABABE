@@ -118,7 +118,8 @@ export class McpService implements OnModuleDestroy {
       await connection.transport.handlePostMessage(req, res);
     } else {
       res.status(503).json({
-        error: 'No active MCP connection. Please establish SSE connection first.',
+        error:
+          'No active MCP connection. Please establish SSE connection first.',
       });
     }
   }
@@ -207,7 +208,8 @@ export class McpService implements OnModuleDestroy {
               properties: {
                 today: {
                   type: 'string',
-                  description: 'A date within the desired week (YYYY-MM-DD, UTC)',
+                  description:
+                    'A date within the desired week (YYYY-MM-DD, UTC)',
                 },
               },
               required: ['today'],
