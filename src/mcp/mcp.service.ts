@@ -62,46 +62,75 @@ export class McpService implements OnModuleDestroy {
   async handleSse(req: Request, res: Response): Promise<void> {
     const connectionId = randomUUID();
 
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
+    // 디버깅: 요청 정보 로깅
+    console.log(`[SSE ${connectionId}] Connection request`);
+    console.log(`[SSE ${connectionId}] IP: ${req.ip}`);
+    console.log(`[SSE ${connectionId}] User-Agent: ${req.headers['user-agent']}`);
+    console.log(`[SSE ${connectionId}] Origin: ${req.headers.origin || 'none'}`);
+    console.log(`[SSE ${connectionId}] Host: ${req.headers.host}`);
 
-    // Create a new Server instance for this connection
-    const server = this.createServerInstance();
-    const transport = new SSEServerTransport('/api/v1/mcp/messages', res);
+    try {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no'); // Nginx buffering 비활성화
 
-    // Connect Server to Transport (1:1 binding)
-    await server.connect(transport);
+      console.log(`[SSE ${connectionId}] Headers set`);
 
-    // Store connection for tracking and cleanup
-    this.connections.set(connectionId, { server, transport });
-    console.log(
-      `MCP SSE connection established: ${connectionId} (total: ${this.connections.size})`,
-    );
+      // Create a new Server instance for this connection
+      const server = this.createServerInstance();
+      console.log(`[SSE ${connectionId}] Server instance created`);
 
-    // Cleanup on client disconnect
-    req.on('close', async () => {
-      console.log(`MCP SSE connection closed: ${connectionId}`);
-      const connection = this.connections.get(connectionId);
+      const transport = new SSEServerTransport('/api/v1/mcp/messages', res);
+      console.log(`[SSE ${connectionId}] Transport created`);
 
-      if (connection) {
-        try {
-          // Close Server (also closes Transport)
-          await connection.server.close();
-        } catch (error) {
-          console.error(
-            `Error closing connection ${connectionId}:`,
-            error.message,
-          );
-        } finally {
-          // Always remove from map
-          this.connections.delete(connectionId);
-          console.log(
-            `MCP connection cleaned up: ${connectionId} (remaining: ${this.connections.size})`,
-          );
+      // Connect Server to Transport (1:1 binding)
+      await server.connect(transport);
+      console.log(`[SSE ${connectionId}] Server connected to transport`);
+
+      // Store connection for tracking and cleanup
+      this.connections.set(connectionId, { server, transport });
+      console.log(
+        `[SSE ${connectionId}] Connection established (total: ${this.connections.size})`,
+      );
+
+      // Cleanup on client disconnect
+      req.on('close', async () => {
+        console.log(`[SSE ${connectionId}] Connection closed by client`);
+        const connection = this.connections.get(connectionId);
+
+        if (connection) {
+          try {
+            // Close Server (also closes Transport)
+            await connection.server.close();
+          } catch (error) {
+            console.error(
+              `[SSE ${connectionId}] Error closing connection:`,
+              error.message,
+            );
+          } finally {
+            // Always remove from map
+            this.connections.delete(connectionId);
+            console.log(
+              `[SSE ${connectionId}] Cleaned up (remaining: ${this.connections.size})`,
+            );
+          }
         }
+      });
+    } catch (error) {
+      console.error(`[SSE ${connectionId}] Error establishing connection:`, error);
+      console.error(`[SSE ${connectionId}] Error message:`, error.message);
+      console.error(`[SSE ${connectionId}] Error stack:`, error.stack);
+
+      // 에러 발생 시 클라이언트에 응답 (헤더가 아직 안 보내졌으면)
+      if (!res.headersSent) {
+        res.status(500).json({
+          error: 'Failed to establish SSE connection',
+          details: error.message,
+          connectionId: connectionId
+        });
       }
-    });
+    }
   }
 
   /**
@@ -111,12 +140,24 @@ export class McpService implements OnModuleDestroy {
    * In typical usage, there's one active SSE connection per client session.
    */
   async handleMessage(req: Request, res: Response): Promise<void> {
+    console.log(`[POST /messages] Received message from ${req.ip}`);
+    console.log(`[POST /messages] Session ID: ${req.query.sessionId || req.body?.sessionId || 'none'}`);
+    console.log(`[POST /messages] Active connections: ${this.connections.size}`);
+
     // Get the first active connection
     const connection = Array.from(this.connections.values())[0];
 
     if (connection?.transport) {
-      await connection.transport.handlePostMessage(req, res);
+      console.log(`[POST /messages] Routing to active transport`);
+      try {
+        await connection.transport.handlePostMessage(req, res);
+        console.log(`[POST /messages] Message handled successfully`);
+      } catch (error) {
+        console.error(`[POST /messages] Error handling message:`, error);
+        throw error;
+      }
     } else {
+      console.warn(`[POST /messages] No active connection available`);
       res.status(503).json({
         error:
           'No active MCP connection. Please establish SSE connection first.',
