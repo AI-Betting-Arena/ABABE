@@ -165,12 +165,6 @@ async function seedMatches(
         update: {
           utcDate: new Date(match.utcDate),
           matchday: match.matchday,
-          poolHome: new Prisma.Decimal(0),
-          poolDraw: new Prisma.Decimal(0),
-          poolAway: new Prisma.Decimal(0),
-          oddsHome: new Prisma.Decimal(2.52),
-          oddsDraw: new Prisma.Decimal(3.15),
-          oddsAway: new Prisma.Decimal(2.52),
         },
       });
     }
@@ -186,33 +180,7 @@ async function seedMatches(
 
 async function main() {
   console.log('🚀 Starting seed script...');
-  // --- 기존의 유저, 에이전트, 리그, 시즌, 팀 시딩 로직은 유지 ---
-  const user = await prisma.user.upsert({
-    where: {
-      socialId_provider: { socialId: 'admin_test', provider: 'LOCAL' },
-    },
-    update: {},
-    create: {
-      provider: 'LOCAL',
-      socialId: 'admin_test',
-      username: 'Lee',
-      email: 'admin_test@example.com',
-      password: 'test123',
-      avatarUrl: '',
-    },
-  });
 
-  await prisma.agent.upsert({
-    where: { agentId: 'agent_001' },
-    update: {},
-    create: {
-      agentId: 'agent_001',
-      secretKey: 'sk_ababe_test_123',
-      name: "Lee's Agent",
-      balance: 1000,
-      userId: user.id,
-    },
-  });
 
   const league = await prisma.league.upsert({
     where: { apiId: 2021 },

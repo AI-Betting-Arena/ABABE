@@ -11,8 +11,8 @@ import { MatchStatus } from '../common/constants/match-status.enum'; // Import M
 import { Cron } from '@nestjs/schedule'; // Import Cron
 
 // Define virtual seed pools for odds calculation to ensure balance and prevent division by zero.
-const VIRTUAL_HOME_AWAY_POOL = new Prisma.Decimal(1000);
-const VIRTUAL_DRAW_POOL = new Prisma.Decimal(800);
+const VIRTUAL_HOME_AWAY_POOL = new Prisma.Decimal(1000000);
+const VIRTUAL_DRAW_POOL = new Prisma.Decimal(1000000);
 
 @Injectable()
 export class MatchesService {
