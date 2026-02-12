@@ -1,4 +1,3 @@
-// src/mcp/mcp.service.ts
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
@@ -9,38 +8,171 @@ import {
 import { MatchesService } from '../matches/matches.service';
 import { Request, Response } from 'express';
 import { AgentsService } from 'src/agents/agents.service';
-import { ProcessBetRequestDto } from 'src/agents/dto/request/process-bet-request.dto'; // Import ProcessBetRequestDto
-import { ProcessBetResponseDto } from 'src/agents/dto/response/process-bet-response.dto'; // Import ProcessBetResponseDto
+import { ProcessBetRequestDto } from 'src/agents/dto/request/process-bet-request.dto';
+import { ProcessBetResponseDto } from 'src/agents/dto/response/process-bet-response.dto';
 import { SettlementService } from 'src/settlement/settlement.service';
-import { DateProvider } from 'src/common/providers/date.provider'; // Import DateProvider
-import { v4 as uuidv4 } from 'uuid';
+import { DateProvider } from 'src/common/providers/date.provider';
+import { randomUUID } from 'crypto';
 
+/**
+ * [PRINCIPLE: SRP] MCP Service - Per-Connection Server Management
+ *
+ * Previous issue: Single Server instance caused "Already connected" error
+ * when multiple clients attempted SSE connections.
+ *
+ * Solution: Each SSE connection gets its own Server instance stored in a Map.
+ * Server.connect() enforces 1:1 binding between Server and Transport.
+ *
+ * Why this works: MCP SDK documentation shows Server instances should be
+ * created per-request for stateless operation, or Transport should be reused
+ * for stateful sessions. SSE creates new Transport per connection, so we
+ * create new Server per connection.
+ */
 @Injectable()
 export class McpService implements OnModuleDestroy {
-  private readonly activeServers = new Map<string, Server>();
-
+  /**
+   * Map of active connections: connectionId -> { server, transport }
+   * Each SSE connection maintains its own Server instance to avoid
+   * "Already connected to a transport" errors.
+   */
+  private readonly connections = new Map<
+    string,
+    { server: Server; transport: SSEServerTransport }
+  >();
 
   constructor(
     private readonly matchesService: MatchesService,
     private readonly agentsService: AgentsService,
     private readonly settlementService: SettlementService,
-    private readonly dateProvider: DateProvider, // Inject DateProvider
+    private readonly dateProvider: DateProvider,
   ) {
-
+    // No longer creating a single shared Server instance
+    // Each connection will create its own via createServerInstance()
   }
 
-  async settleLastWeekMatches(): Promise<string> {
-    // Intentionally not awaiting this to allow the HTTP request to return immediately
-    // while the settlement runs in the background.
+  /**
+   * [PRINCIPLE: SRP] Handle SSE connection - creates isolated Server per client
+   *
+   * Each SSE connection receives:
+   * 1. Unique connectionId for tracking
+   * 2. Dedicated Server instance (avoids "Already connected" error)
+   * 3. SSEServerTransport bound to this Server
+   * 4. Cleanup handler on connection close
+   */
+  async handleSse(req: Request, res: Response): Promise<void> {
+    const connectionId = randomUUID();
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    // Create a new Server instance for this connection
+    const server = this.createServerInstance();
+    const transport = new SSEServerTransport('/api/v1/mcp/messages', res);
+
+    // Connect Server to Transport (1:1 binding)
+    await server.connect(transport);
+
+    // Store connection for tracking and cleanup
+    this.connections.set(connectionId, { server, transport });
+    console.log(
+      `MCP SSE connection established: ${connectionId} (total: ${this.connections.size})`,
+    );
+
+    // Cleanup on client disconnect
+    req.on('close', async () => {
+      console.log(`MCP SSE connection closed: ${connectionId}`);
+      const connection = this.connections.get(connectionId);
+
+      if (connection) {
+        try {
+          // Close Server (also closes Transport)
+          await connection.server.close();
+        } catch (error) {
+          console.error(
+            `Error closing connection ${connectionId}:`,
+            error.message,
+          );
+        } finally {
+          // Always remove from map
+          this.connections.delete(connectionId);
+          console.log(
+            `MCP connection cleaned up: ${connectionId} (remaining: ${this.connections.size})`,
+          );
+        }
+      }
+    });
+  }
+
+  /**
+   * Handle POST /messages endpoint
+   *
+   * Routes message to the first active SSE connection's transport.
+   * In typical usage, there's one active SSE connection per client session.
+   */
+  async handleMessage(req: Request, res: Response): Promise<void> {
+    // Get the first active connection
+    const connection = Array.from(this.connections.values())[0];
+
+    if (connection?.transport) {
+      await connection.transport.handlePostMessage(req, res);
+    } else {
+      res.status(503).json({
+        error: 'No active MCP connection. Please establish SSE connection first.',
+      });
+    }
+  }
+
+  /**
+   * Cleanup all active connections on module shutdown
+   */
+  async onModuleDestroy() {
+    console.log(
+      `McpService shutting down: closing ${this.connections.size} active connections`,
+    );
+
+    const closePromises = Array.from(this.connections.entries()).map(
+      async ([connectionId, connection]) => {
+        try {
+          await connection.server.close();
+          console.log(`Closed connection: ${connectionId}`);
+        } catch (error) {
+          console.error(
+            `Error closing connection ${connectionId}:`,
+            error.message,
+          );
+        }
+      },
+    );
+
+    await Promise.all(closePromises);
+    this.connections.clear();
+    console.log('McpService shutdown complete');
+  }
+
+  settleLastWeekMatches(): Promise<string> {
     this.settlementService.handleWeeklySettlement();
-    return 'Weekly settlement process has been manually triggered and is running in the background.';
+    return Promise.resolve(
+      'Weekly settlement process has been manually triggered and is running in the background.',
+    );
   }
 
-  // 1. SSE 연결 핸들러
-  async handleSse(req: Request, res: Response) {
-    const connectionId = uuidv4(); // Generate unique ID
+  getBettingRules() {
+    // Return a simplified version of rules for brevity
+    return {
+      arenaName: 'AI Betting Arena (ABA)',
+      version: '1.0',
+    };
+  }
 
-    // Create a new Server instance for each connection
+  /**
+   * [PRINCIPLE: DRY] Create a new Server instance with all tool handlers
+   *
+   * Each connection needs its own Server instance, but they all share
+   * the same tool definitions. This method centralizes Server creation
+   * to avoid code duplication.
+   */
+  private createServerInstance(): Server {
     const server = new Server(
       {
         name: 'ababe-arena-mcp',
@@ -52,114 +184,17 @@ export class McpService implements OnModuleDestroy {
         },
       },
     );
-    this.setupHandlersForInstance(server); // Setup handlers for this specific server
 
-    // Send the connection ID to the client as a custom header BEFORE the transport takes over the response.
-    res.setHeader('X-Mcp-Connection-Id', connectionId);
-    // Note: client-side needs to read this header and include it in subsequent POST requests.
-
-    const transport = new SSEServerTransport('/api/v1/mcp/messages', res);
-    await server.connect(transport); // Connect after setting headers and creating transport
-
-    this.activeServers.set(connectionId, server); // Store the server instance with connectionId
-
-    // Handle when the connection is lost.
-    req.on('close', async () => {
-      const closedServer = this.activeServers.get(connectionId); // Use connectionId for lookup
-      if (closedServer) {
-        await closedServer.close(); // Close the specific server instance for this client
-        this.activeServers.delete(connectionId); // Remove from map
-        console.log('SSE connection closed and server instance disconnected for ID:', connectionId);
-      }
-    });
+    this.setupToolHandlers(server);
+    return server;
   }
 
-  // 2. 메시지 수신 핸들러
-  // src/mcp/mcp.service.ts
-
-  async handleMessage(req: Request, res: Response) {
-    const connectionId = req.headers['x-mcp-connection-id'] as string; // Get connection ID from header
-
-    if (!connectionId) {
-      res.status(400).send('Missing X-Mcp-Connection-Id header.');
-      return;
-    }
-
-    const server = this.activeServers.get(connectionId); // Get the specific server instance
-    if (!server) {
-      res.status(400).send('No active SSE connection found for the provided ID.');
-      return;
-    }
-
-    try {
-      // 💡 Allow SSE transport to handle POST requests.
-      await (server.transport as SSEServerTransport).handlePostMessage(req, res);
-    } catch (error) {
-      console.error('MCP Message Error:', error);
-      // 💡 Initialize stream state or clarify error response when an error occurs.
-      if (!res.headersSent) {
-        res
-          .status(500)
-          .json({ error: 'Stream handling failed', details: error.message });
-      }
-    }
-  }
-
-  getBettingRules() {
-    return {
-      arenaName: 'AI Betting Arena (ABA)',
-      version: '1.0',
-      riskManagement: {
-        maxBetLimitPerMatch: {
-          value: 0.2,
-          description:
-            'You can bet a maximum of 20% of your current points on a single match.',
-        },
-        minBetAmountPerMatch: {
-          value: 1000000,
-          description:
-            'A minimum of 1,000,000 points is required for each bet.',
-        },
-        assetProtection:
-          'Betting limits are systematically controlled to prevent reckless asset depletion and encourage strategic, long-term participation.',
-      },
-      economy: {
-        initialCapital: {
-          value: 10000,
-          description: 'All agents start with 10,000 points.',
-        },
-        payoutSystem: {
-          method: 'Pari-mutuel',
-          description:
-            'The total prize pool, minus a system fee, is distributed among the winners who bet on the correct outcome.',
-        },
-        systemFee: {
-          value: 0.1,
-          description:
-            'A 10% fee is deducted from the total betting pool to be burned, helping to manage the point economy.',
-        },
-        payoutFormula:
-          '(Total Pool * 0.9) / Total amount bet on the winning outcome (Win/Draw/Loss)',
-        winningsCalculation:
-          'Winnings are calculated as (Odds at the time of betting * Points bet) and rounded to the nearest whole number.',
-      },
-      participationProtocol: {
-        mandatoryAnalysisReport: {
-          requirement:
-            'A detailed analysis report in Markdown format must be submitted with every bet.',
-          penalty:
-            'Bets without a corresponding report will be considered invalid.',
-        },
-        bettingDeadline:
-          'Bets and analysis reports can be submitted or modified up to 10 minutes before the match starts.',
-        dataTransparency:
-          'All agent analyses and betting records are public and will be used for ranking purposes.',
-      },
-    };
-  }
-
-  private setupHandlersForInstance(server: Server) {
-    // List of tools to provide to the AI.
+  /**
+   * Setup tool handlers for a Server instance
+   *
+   * @param server - The Server instance to configure
+   */
+  private setupToolHandlers(server: Server) {
     server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: [
@@ -178,8 +213,6 @@ export class McpService implements OnModuleDestroy {
               required: ['today'],
             },
           },
-          // place_bet section in setupHandlers within src/mcp/mcp.service.ts
-
           {
             name: 'place_bet',
             description:
@@ -228,12 +261,11 @@ export class McpService implements OnModuleDestroy {
                 'prediction',
                 'betAmount',
                 'confidence',
-                'summary', // Changed from 'reason'
+                'summary',
                 'keyPoints',
               ],
             },
           },
-          // Tool to inquire about the AI agent's current betting points.
           {
             name: 'get_betting_points',
             description:
@@ -246,8 +278,7 @@ export class McpService implements OnModuleDestroy {
               },
               required: ['agentId', 'secretKey'],
             },
-          }, // Added comma here
-          // Add the new tool definition
+          },
           {
             name: 'get_betting_rules',
             description:
@@ -262,7 +293,6 @@ export class McpService implements OnModuleDestroy {
       };
     });
 
-    // Tool execution logic.
     server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
 
@@ -271,8 +301,8 @@ export class McpService implements OnModuleDestroy {
         const { startOfWeek, endOfWeek } =
           this.dateProvider.getStartAndEndOfWeekUTC(today);
 
-        const fromString = startOfWeek.toISOString().split('T')[0]; // YYYY-MM-DD
-        const toString = endOfWeek.toISOString().split('T')[0]; // YYYY-MM-DD
+        const fromString = startOfWeek.toISOString().split('T')[0];
+        const toString = endOfWeek.toISOString().split('T')[0];
 
         const result = await this.matchesService.findMatches(
           fromString,
@@ -340,7 +370,6 @@ export class McpService implements OnModuleDestroy {
         }
       }
 
-      // Add handler for the new tool
       if (name === 'get_betting_rules') {
         const rules = this.getBettingRules();
         return {
@@ -350,13 +379,5 @@ export class McpService implements OnModuleDestroy {
 
       throw new Error(`Tool not found: ${name}`);
     });
-  }
-
-  async onModuleDestroy() {
-    // Close all active server connections
-    for (const server of this.activeServers.values()) {
-      await server.close();
-    }
-    this.activeServers.clear();
   }
 }

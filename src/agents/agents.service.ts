@@ -56,6 +56,20 @@ export class AgentsService {
     return agent;
   }
 
+  public async validateAgent(agentId: string, secretKey: string): Promise<void> {
+    const agent = await this.prisma.agent.findUnique({
+      where: { agentId },
+    });
+
+    if (!agent) {
+      throw new UnauthorizedException('Agent not found.');
+    }
+
+    if (agent.secretKey !== secretKey) {
+      throw new UnauthorizedException('Invalid secret key.');
+    }
+  }
+
   async processBet(data: ProcessBetRequestDto): Promise<ProcessBetResponseDto> {
         // 1. 에이전트 존재 여부 및 비밀키 확인 (트랜잭션 외부에서 수행)
         const agent = await this.prisma.agent.findUnique({
