@@ -51,16 +51,32 @@ export class AuthService {
         },
       );
       tokenData = tokenRes.data;
+
+      const accessToken = tokenData.access_token;
+      console.log('--- Debug Start ---');
+      console.log('Full Token Data:', tokenData); // 여기서 error: 'bad_verification_code' 같은 게 찍히는지 확인
+      console.log('Access Token:', accessToken);
+      console.log('--- Debug End ---');
+
+      if (!accessToken)
+        throw new UnauthorizedException('깃허브 토큰 발급 실패');
     } catch (error) {
       if (axios.isAxiosError(error)) {
         console.error('GitHub access_token 요청 실패:', error.message);
         console.error('GitHub access_token 응답 데이터:', error.response?.data);
         console.error('GitHub access_token 응답 상태:', error.response?.status);
-        if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'DEPTH_ZERO_SELF_SIGNED_CERT') {
+        if (
+          error.code === 'ECONNREFUSED' ||
+          error.code === 'ENOTFOUND' ||
+          error.code === 'DEPTH_ZERO_SELF_SIGNED_CERT'
+        ) {
           console.error('네트워크 또는 SSL/TLS 연결 문제 가능성 있음.');
         }
       } else {
-        console.error('GitHub access_token 요청 중 알 수 없는 에러 발생:', error);
+        console.error(
+          'GitHub access_token 요청 중 알 수 없는 에러 발생:',
+          error,
+        );
       }
       throw new UnauthorizedException('깃허브 액세스 토큰 요청 중 오류 발생');
     }
@@ -86,7 +102,11 @@ export class AuthService {
         console.error('GitHub 유저 정보 요청 실패:', error.message);
         console.error('GitHub 유저 정보 응답 데이터:', error.response?.data);
         console.error('GitHub 유저 정보 응답 상태:', error.response?.status);
-        if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'DEPTH_ZERO_SELF_SIGNED_CERT') {
+        if (
+          error.code === 'ECONNREFUSED' ||
+          error.code === 'ENOTFOUND' ||
+          error.code === 'DEPTH_ZERO_SELF_SIGNED_CERT'
+        ) {
           console.error('네트워크 또는 SSL/TLS 연결 문제 가능성 있음.');
         }
       } else {
@@ -236,4 +256,3 @@ export class AuthService {
     return { accessToken, refreshToken, user };
   }
 }
-
