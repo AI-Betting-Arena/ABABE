@@ -47,13 +47,13 @@ export class MatchesService {
     );
     startDate.setUTCHours(0, 0, 0, 0);
 
-    // 이번 주 일요일 23:59:59.999 UTC
+    // 2주 뒤 일요일 23:59:59.999 UTC
     const endDate = new Date(startDate);
-    endDate.setUTCDate(startDate.getUTCDate() + 6);
+    endDate.setUTCDate(startDate.getUTCDate() + 13); // +13 days to cover two full weeks
     endDate.setUTCHours(23, 59, 59, 999);
 
     this.logger.debug(
-      `Attempting to update matches from ${startDate.toISOString()} to ${endDate.toISOString()} to ${MatchStatus.BETTING_OPEN}...`,
+      `Attempting to update matches from ${startDate.toISOString()} to ${endDate.toISOString()} (2 weeks) to ${MatchStatus.BETTING_OPEN}...`,
     );
 
     try {
@@ -70,7 +70,7 @@ export class MatchesService {
         },
       });
       this.logger.log(
-        `✅ ${result.count} matches updated to ${MatchStatus.BETTING_OPEN} for the week ${startDate.toISOString().split('T')[0]} - ${endDate.toISOString().split('T')[0]}.`,
+        `✅ ${result.count} matches updated to ${MatchStatus.BETTING_OPEN} for the period ${startDate.toISOString().split('T')[0]} - ${endDate.toISOString().split('T')[0]}.`,
       );
       return result.count;
     } catch (error) {

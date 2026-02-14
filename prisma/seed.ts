@@ -54,128 +54,124 @@ async function fetchMatchesFromApi(dateFrom: string, dateTo: string) {
 }
 
 /**
- * --- Principle: SRP ---
- * 이 함수는 현재 주의 경기 상태를 업데이트하는 책임만 가짐.
+ * --- Principle: SRP, Efficiency ---
+ * 이 함수는 "앞으로 2주간의 경기를 가져와 베팅을 연다"는 단일 책임을 가진다.
+ * API 제약을 준수하기 위해 주 단위로 조회하되, DB 접근은 최소화하여 효율을 추구한다.
  */
-async function updateCurrentWeekMatches(prisma: PrismaClient) {
-  // 시뮬레이션 기준일: 2026년 2월 9일 월요일
+async function seedAndOpenMatchesForNextTwoWeeks(
+  prisma: PrismaClient,
+  teamMap: Record<number, number>,
+  seasonId: number,
+) {
+  const allMatches: any[] = [];
+  const WEEKS_TO_FETCH = 2;
+
+  // 시뮬레이션 기준일 (실제 운영 시 new Date() 사용)
   const today = new Date('2026-02-09T00:00:00Z');
+
+  // 기준이 될 이번 주 월요일 계산
   const dayOfWeek = today.getUTCDay(); // 0(일) ~ 6(토)
+  const baseStartDate = new Date(today);
+  baseStartDate.setUTCDate(
+    today.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1),
+  );
+  baseStartDate.setUTCHours(0, 0, 0, 0);
 
-  // 이번 주 월요일 (UTC 00:00:00)
-  const startDate = new Date(today);
-  startDate.setUTCDate(today.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-  startDate.setUTCHours(0, 0, 0, 0);
+  // 1주씩 2번 루프 돌며 API 호출
+  for (let i = 0; i < WEEKS_TO_FETCH; i++) {
+    const weekStartDate = new Date(baseStartDate);
+    weekStartDate.setUTCDate(baseStartDate.getUTCDate() + i * 7);
 
-  // 이번 주 일요일 (UTC 23:59:59)
-  const endDate = new Date(startDate);
-  endDate.setUTCDate(startDate.getUTCDate() + 6);
-  endDate.setUTCHours(23, 59, 59, 999);
+    const weekEndDate = new Date(weekStartDate);
+    weekEndDate.setUTCDate(weekStartDate.getUTCDate() + 6);
+
+    // API 조회를 위한 날짜 포맷 (endDate에 하루를 더함)
+    const apiEndDate = new Date(weekEndDate);
+    apiEndDate.setUTCDate(weekEndDate.getUTCDate() + 1);
+
+    const dateFromString = weekStartDate.toISOString().split('T')[0];
+    const dateToString = apiEndDate.toISOString().split('T')[0];
+
+    console.log(
+      `\n[Week ${i + 1}/${WEEKS_TO_FETCH}] Fetching from ${dateFromString} to ${dateToString}...`,
+    );
+
+    const matches = await fetchMatchesFromApi(dateFromString, dateToString);
+    if (matches && matches.length > 0) {
+      allMatches.push(...matches);
+      console.log(`   -> Found ${matches.length} matches.`);
+    } else {
+      console.log(`   -> No matches found for this week.`);
+    }
+  }
+
+  if (allMatches.length === 0) {
+    console.log(`\nNo matches found for the next ${WEEKS_TO_FETCH} weeks.`);
+    return;
+  }
+
+  // --- Upsert 로직 (루프 밖에서 한번에 처리) ---
+  console.log(`\nUpserting a total of ${allMatches.length} matches...`);
+  for (const match of allMatches) {
+    const homeTeamId = teamMap[match.homeTeam.id];
+    const awayTeamId = teamMap[match.awayTeam.id];
+
+    if (!homeTeamId || !awayTeamId) {
+      console.warn(
+        `Skipping match ID ${match.id}: Team not found in DB (Home: ${match.homeTeam.id}, Away: ${match.awayTeam.id})`,
+      );
+      continue;
+    }
+
+    await prisma.match.upsert({
+      where: { apiId: match.id },
+      create: {
+        apiId: match.id,
+        seasonId: seasonId,
+        utcDate: new Date(match.utcDate),
+        status: MatchStatus.UPCOMING,
+        matchday: match.matchday,
+        homeTeamId: homeTeamId,
+        awayTeamId: awayTeamId,
+        stage: match.stage,
+        poolHome: new Prisma.Decimal(0),
+        poolDraw: new Prisma.Decimal(0),
+        poolAway: new Prisma.Decimal(0),
+        oddsHome: new Prisma.Decimal(2.52),
+        oddsDraw: new Prisma.Decimal(3.15),
+        oddsAway: new Prisma.Decimal(2.52),
+      },
+      update: {
+        utcDate: new Date(match.utcDate),
+        matchday: match.matchday,
+      },
+    });
+  }
+  console.log(`   -> ${allMatches.length} matches upserted.`);
+
+  // --- 2주치 경기를 BETTING_OPEN으로 상태 변경 ---
+  const twoWeeksEndDate = new Date(baseStartDate);
+  twoWeeksEndDate.setUTCDate(baseStartDate.getUTCDate() + 13);
+  twoWeeksEndDate.setUTCHours(23, 59, 59, 999);
 
   console.log(
-    `Updating matches from ${startDate.toISOString()} to ${endDate.toISOString()} to ${MatchStatus.BETTING_OPEN}...`,
+    `\nUpdating matches from ${baseStartDate.toISOString()} to ${twoWeeksEndDate.toISOString()} to ${MatchStatus.BETTING_OPEN}...`,
   );
 
   const result = await prisma.match.updateMany({
     where: {
       utcDate: {
-        gte: startDate,
-        lte: endDate,
+        gte: baseStartDate,
+        lte: twoWeeksEndDate,
       },
-      status: MatchStatus.UPCOMING, // Changed from 'TIMED'
+      status: MatchStatus.UPCOMING,
     },
     data: {
-      status: MatchStatus.BETTING_OPEN, // Changed from 'BETTING_OPEN' string
+      status: MatchStatus.BETTING_OPEN,
     },
   });
 
   console.log(`✅ ${result.count} matches updated to ${MatchStatus.BETTING_OPEN}.`);
-}
-
-
-// Renamed from seedFutureMatches to seedMatches to reflect it seeds all relevant weeks
-async function seedMatches(
-  prisma: PrismaClient,
-  teamMap: Record<number, number>,
-  seasonId: number,
-) {
-  const WEEKS_TO_FETCH = 10;
-  // API Rate Limit(분당 10회) 준수를 위한 딜레이 (6초)
-  const API_DELAY_MS = 6000;
-
-  console.log(`Fetching next ${WEEKS_TO_FETCH} weeks of matches...`);
-  
-  const today = new Date('2026-02-09T00:00:00Z'); // Simulation date
-
-  // Loop from 0 to WEEKS_TO_FETCH - 1 to include the current week
-  for (let i = 0; i < WEEKS_TO_FETCH; i++) {
-    const dateFrom = new Date(today);
-    const dayOfWeek = dateFrom.getUTCDay(); // 0(일) ~ 6(토)
-
-    // i 주 후의 월요일 계산 (i=0일 때 오늘이 속한 주간의 월요일이 됨)
-    dateFrom.setUTCDate(dateFrom.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) + (i * 7));
-    dateFrom.setUTCHours(0, 0, 0, 0);
-
-    const dateTo = new Date(dateFrom);
-    dateTo.setUTCDate(dateFrom.getUTCDate() + 6);
-    dateTo.setUTCHours(23, 59, 59, 999);
-
-    const dateFromString = dateFrom.toISOString().split('T')[0];
-    const dateToString = dateTo.toISOString().split('T')[0];
-
-    console.log(`\n[Week ${i}] Fetching from ${dateFromString} to ${dateToString}...`);
-
-    const matches = await fetchMatchesFromApi(dateFromString, dateToString);
-
-    if (!matches || matches.length === 0) {
-      console.log(`No matches found for week ${i}.`);
-      continue;
-    }
-
-    for (const match of matches) {
-      const homeTeamId = teamMap[match.homeTeam.id];
-      const awayTeamId = teamMap[match.awayTeam.id];
-
-      // 팀 정보가 DB에 없는 경우 건너뛰기
-      if (!homeTeamId || !awayTeamId) {
-        console.warn(
-          `Skipping match ID ${match.id}: Team not found in DB (Home: ${match.homeTeam.id}, Away: ${match.awayTeam.id})`,
-        );
-        continue;
-      }
-
-      await prisma.match.upsert({
-        where: { apiId: match.id },
-        create: {
-          apiId: match.id,
-          seasonId: seasonId,
-          utcDate: new Date(match.utcDate),
-          status: MatchStatus.UPCOMING,
-          matchday: match.matchday,
-          homeTeamId: homeTeamId,
-          awayTeamId: awayTeamId,
-          stage: match.stage,
-          poolHome: new Prisma.Decimal(0),
-          poolDraw: new Prisma.Decimal(0),
-          poolAway: new Prisma.Decimal(0),
-          oddsHome: new Prisma.Decimal(2.52),
-          oddsDraw: new Prisma.Decimal(3.15),
-          oddsAway: new Prisma.Decimal(2.52),
-        },
-        update: {
-          utcDate: new Date(match.utcDate),
-          matchday: match.matchday,
-        },
-      });
-    }
-    console.log(`   -> ${matches.length} matches upserted for week ${i}.`);
-
-    // --- Principle: API Rate Limiting 준수 ---
-    if (i < WEEKS_TO_FETCH) {
-      console.log(`   Waiting ${API_DELAY_MS / 1000} seconds...`);
-      await new Promise(resolve => setTimeout(resolve, API_DELAY_MS));
-    }
-  }
 }
 
 async function main() {
@@ -368,11 +364,8 @@ async function main() {
   }
   console.log('✅ Teams seeded.');
 
-  // --- [REMOVED] 하드코딩된 경기 데이터 및 관련 루프 제거 ---
-
-  // --- [ADDED] 분리된 함수들을 순서대로 호출 ---
-  await seedMatches(prisma, teamApiIdToInternalId, season.id); // Call seedMatches first
-  await updateCurrentWeekMatches(prisma); // Then call updateCurrentWeekMatches
+  // --- [REPLACED] 기존 함수 호출부를 새 함수 호출로 변경 ---
+  await seedAndOpenMatchesForNextTwoWeeks(prisma, teamApiIdToInternalId, season.id);
 
   console.log('\n✅ Seed data script finished successfully!');
 }
