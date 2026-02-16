@@ -10,6 +10,7 @@ import { Request, Response } from 'express';
 import { AgentsService } from 'src/agents/agents.service';
 import { ProcessBetRequestDto } from 'src/agents/dto/request/process-bet-request.dto';
 import { ProcessBetResponseDto } from 'src/agents/dto/response/process-bet-response.dto';
+import { UpdateBetRequestDto } from 'src/agents/dto/request/update-bet-request.dto';
 import { SettlementService } from 'src/settlement/settlement.service';
 import { DateProvider } from 'src/common/providers/date.provider';
 import { randomUUID } from 'crypto';
@@ -201,6 +202,50 @@ export class McpService {
             },
           },
           {
+            name: 'update_bet',
+            description:
+              'Updates an existing bet placed by the AI agent. Allows modifying prediction, bet amount, confidence, summary, content, key points, and analysis stats before the match betting window closes.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                agentId: { type: 'string' },
+                secretKey: { type: 'string' },
+                matchId: { type: 'number' },
+                prediction: {
+                  type: 'string',
+                  enum: ['HOME_TEAM', 'AWAY_TEAM', 'DRAW'],
+                },
+                betAmount: { type: 'number' },
+                confidence: {
+                  type: 'number',
+                  minimum: 0,
+                  maximum: 100,
+                  description: 'Prediction confidence (0-100)',
+                },
+                summary: {
+                  type: 'string',
+                  description:
+                    'Concise summary of the analysis (max 100 characters)',
+                },
+                content: {
+                  type: 'string',
+                  description: 'Detailed analysis content (Markdown supported)',
+                },
+                keyPoints: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Three key analysis points',
+                },
+                analysisStats: {
+                  type: 'object',
+                  description:
+                    'Prediction basis statistics (e.g., { "homeWinRate": 60, "avgGoals": 2.5 })',
+                },
+              },
+              required: ['agentId', 'secretKey', 'matchId'],
+            },
+          },
+          {
             name: 'get_betting_rules',
             description:
               'Retrieves the official rules of the ABABE Arena, including betting limits, fees, and settlement methods.',
@@ -285,6 +330,31 @@ export class McpService {
                 type: 'text',
                 text: `❌ Failed to retrieve betting points: ${error.message}`,
               },
+            ],
+            isError: true,
+          };
+        }
+      }
+
+      if (name === 'update_bet') {
+        try {
+          const result: ProcessBetResponseDto =
+            await this.agentsService.updateBet(
+              args as unknown as UpdateBetRequestDto,
+            );
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✅ Bet updated successfully! Agent: ${result.agentName}, Bet Type: ${result.predictionType}, Points spent: ${result.betAmount}, Odds: ${result.betOdd}, Remaining balance: ${result.remainingBalance}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              { type: 'text', text: `❌ Bet update failed: ${error.message}` },
             ],
             isError: true,
           };

@@ -325,6 +325,7 @@ export type PredictionOrderByWithRelationInput = {
 
 export type PredictionWhereUniqueInput = Prisma.AtLeast<{
   id?: number
+  agentId_matchId?: Prisma.PredictionAgentIdMatchIdCompoundUniqueInput
   AND?: Prisma.PredictionWhereInput | Prisma.PredictionWhereInput[]
   OR?: Prisma.PredictionWhereInput[]
   NOT?: Prisma.PredictionWhereInput | Prisma.PredictionWhereInput[]
@@ -343,7 +344,7 @@ export type PredictionWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Prediction"> | Date | string
   agent?: Prisma.XOR<Prisma.AgentScalarRelationFilter, Prisma.AgentWhereInput>
   match?: Prisma.XOR<Prisma.MatchScalarRelationFilter, Prisma.MatchWhereInput>
-}, "id">
+}, "id" | "agentId_matchId">
 
 export type PredictionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -517,6 +518,11 @@ export type StringNullableListFilter<$PrismaModel = never> = {
   hasEvery?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
   hasSome?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
   isEmpty?: boolean
+}
+
+export type PredictionAgentIdMatchIdCompoundUniqueInput = {
+  agentId: number
+  matchId: number
 }
 
 export type PredictionCountOrderByAggregateInput = {

@@ -13,12 +13,14 @@ import {
   AgentBetPredictionType,
   ProcessBetRequestDto,
 } from './dto/request/process-bet-request.dto'; // Import DTOs
+import { UpdateBetRequestDto } from './dto/request/update-bet-request.dto';
 import { ProcessBetResponseDto } from './dto/response/process-bet-response.dto'; // Import ProcessBetResponseDto
 import { AgentDetailDto } from './dto/response/agent-detail.dto';
 import { MyAgentDetailDto } from './dto/response/my-agent-detail.dto';
 import { AgentPredictionResponseDto } from './dto/response/agent-prediction-response.dto';
 import { Prisma } from 'src/generated/prisma/client';
 import { v4 as uuidv4 } from 'uuid'; // Import uuid
+import { validateMatchBettingWindow } from '../common/utils/match-validation.util';
 
 @Injectable()
 export class AgentsService {
@@ -75,30 +77,44 @@ export class AgentsService {
         const agent = await this.prisma.agent.findUnique({
           where: { agentId: data.agentId },
         });
-    
+
         if (!agent) {
           throw new UnauthorizedException('Agent not found.');
         }
-    
+
         if (agent.secretKey !== data.secretKey) {
           throw new UnauthorizedException('Invalid secret key.');
+        }
+
+        // 1.5. 중복 베팅 체크
+        const existingBet = await this.prisma.prediction.findFirst({
+          where: {
+            agentId: agent.id,
+            matchId: data.matchId,
+          },
+        });
+
+        if (existingBet) {
+          throw new BadRequestException(
+            `DUPLICATE_BET_ERROR: You already placed a bet on Match ${data.matchId}. Use the update_bet tool to modify your existing analysis or bet amount.`,
+          );
         }
     
         // 2. 경기 정보 조회 및 마감 여부 확인 (트랜잭션 외부에서 수행, 상태 업데이트 포함)
         let match = await this.prisma.match.findUnique({
           where: { id: data.matchId },
         });
-    
+
         if (!match) {
           throw new NotFoundException(`Match with ID ${data.matchId} not found.`);
         }
-    
+
         const now = this.dateProvider.now();
         const tenMinutesInMillis = 10 * 60 * 1000;
         const bettingDeadline = new Date(
           match.utcDate.getTime() - tenMinutesInMillis,
         );
-    
+
         // 마감 시간이 지났고, 아직 BETTING_CLOSED가 아니라면 업데이트 (트랜잭션 외부에서 즉시 커밋)
         if (now >= bettingDeadline && match.status !== MatchStatus.BETTING_CLOSED) {
           match = await this.prisma.match.update({ // match 객체를 갱신
@@ -106,17 +122,9 @@ export class AgentsService {
             data: { status: MatchStatus.BETTING_CLOSED },
           });
         }
-    
-        // 통합된 상태 체크 로직
-        if (
-          match.status === MatchStatus.UPCOMING ||
-          match.status === MatchStatus.BETTING_CLOSED ||
-          match.status === MatchStatus.SETTLED
-        ) {
-          throw new BadRequestException(
-            `Betting for this match is not allowed. Status: ${match.status}`,
-          );
-        }
+
+        // Validate match betting window
+        validateMatchBettingWindow(match, now);
     
         // 💡 Prisma 트랜잭션 시작 (베팅 처리 로직만 포함)
         return await this.prisma.$transaction(async (tx) => {
@@ -205,6 +213,174 @@ export class AgentsService {
         predictionType: data.prediction,
         matchId: data.matchId,
         predictionId: createdPrediction.id,
+      };
+    });
+  }
+
+  async updateBet(data: UpdateBetRequestDto): Promise<ProcessBetResponseDto> {
+    // 1. 에이전트 존재 여부 및 비밀키 확인
+    const agent = await this.prisma.agent.findUnique({
+      where: { agentId: data.agentId },
+    });
+
+    if (!agent) {
+      throw new UnauthorizedException('Agent not found.');
+    }
+
+    if (agent.secretKey !== data.secretKey) {
+      throw new UnauthorizedException('Invalid secret key.');
+    }
+
+    // 2. 기존 베팅 존재 여부 확인
+    const existingPrediction = await this.prisma.prediction.findFirst({
+      where: {
+        agentId: agent.id,
+        matchId: data.matchId,
+      },
+    });
+
+    if (!existingPrediction) {
+      throw new NotFoundException(
+        `No bet found for Match ${data.matchId}. Use place_bet to create a new bet.`,
+      );
+    }
+
+    // 3. 경기 정보 조회 및 베팅 윈도우 확인
+    let match = await this.prisma.match.findUnique({
+      where: { id: data.matchId },
+    });
+
+    if (!match) {
+      throw new NotFoundException(`Match with ID ${data.matchId} not found.`);
+    }
+
+    const now = this.dateProvider.now();
+    const tenMinutesInMillis = 10 * 60 * 1000;
+    const bettingDeadline = new Date(
+      match.utcDate.getTime() - tenMinutesInMillis,
+    );
+
+    // 마감 시간이 지났고, 아직 BETTING_CLOSED가 아니라면 업데이트
+    if (now >= bettingDeadline && match.status !== MatchStatus.BETTING_CLOSED) {
+      match = await this.prisma.match.update({
+        where: { id: data.matchId },
+        data: { status: MatchStatus.BETTING_CLOSED },
+      });
+    }
+
+    // Validate match betting window
+    validateMatchBettingWindow(match, now);
+
+    // 4. 트랜잭션으로 베팅 업데이트 처리
+    return await this.prisma.$transaction(async (tx) => {
+      // 5. betAmount가 변경되는 경우 잔액 검증 및 조정
+      let balanceAdjustment = new Prisma.Decimal(0);
+      let updatedAgent = agent;
+
+      if (data.betAmount !== undefined) {
+        const newBetAmount = new Prisma.Decimal(data.betAmount);
+        const oldBetAmount = existingPrediction.betAmount;
+        balanceAdjustment = newBetAmount.minus(oldBetAmount);
+
+        // 최소 베팅 금액 확인
+        const MIN_BET_AMOUNT_RULE = new Prisma.Decimal(100);
+        if (newBetAmount.lessThan(MIN_BET_AMOUNT_RULE)) {
+          throw new BadRequestException(
+            `Minimum bet amount is ${MIN_BET_AMOUNT_RULE.toNumber()} points.`,
+          );
+        }
+
+        // 최대 베팅 금액 (20%) 확인 - 기존 베팅 금액을 돌려받은 상태에서 계산
+        const availableBalance = agent.balance.plus(oldBetAmount);
+        const MAX_BET_PERCENTAGE = new Prisma.Decimal(0.2);
+        const maxBetAmount = availableBalance.times(MAX_BET_PERCENTAGE);
+        if (newBetAmount.greaterThan(maxBetAmount)) {
+          throw new BadRequestException(
+            `Cannot bet more than 20% of your total points (${maxBetAmount.toFixed(2)} points).`,
+          );
+        }
+
+        // 잔액 확인 (기존 베팅을 취소한 상태 기준)
+        if (availableBalance.lessThan(newBetAmount)) {
+          throw new BadRequestException('Insufficient balance.');
+        }
+
+        // 에이전트 잔액 조정 (차액만큼 증가 또는 감소)
+        updatedAgent = await tx.agent.update({
+          where: { id: agent.id },
+          data: {
+            balance: {
+              decrement: balanceAdjustment,
+            },
+          },
+        });
+      }
+
+      // 6. prediction이 변경되는 경우 풀 및 배당률 재계산
+      let betOdd = existingPrediction.betOdd;
+
+      if (data.prediction !== undefined || data.betAmount !== undefined) {
+        // 기존 베팅 금액을 풀에서 차감
+        await this.matchesService.calculateAndSetOdds(
+          data.matchId,
+          existingPrediction.betAmount.negated(),
+          existingPrediction.prediction as AgentBetPredictionType,
+        );
+
+        // 새로운 베팅 금액과 예측을 풀에 추가하고 배당률 계산
+        const newPrediction = data.prediction || (existingPrediction.prediction as AgentBetPredictionType);
+        const newBetAmount = data.betAmount !== undefined
+          ? new Prisma.Decimal(data.betAmount)
+          : existingPrediction.betAmount;
+
+        const { oddsHome, oddsDraw, oddsAway } =
+          await this.matchesService.calculateAndSetOdds(
+            data.matchId,
+            newBetAmount,
+            newPrediction,
+          );
+
+        // 새로운 배당률 결정
+        switch (newPrediction) {
+          case AgentBetPredictionType.HOME_TEAM:
+            betOdd = oddsHome;
+            break;
+          case AgentBetPredictionType.DRAW:
+            betOdd = oddsDraw;
+            break;
+          case AgentBetPredictionType.AWAY_TEAM:
+            betOdd = oddsAway;
+            break;
+        }
+      }
+
+      // 7. Prediction 업데이트 (제공된 필드만)
+      const updateData: any = {
+        betOdd: betOdd,
+      };
+
+      if (data.prediction !== undefined) updateData.prediction = data.prediction;
+      if (data.betAmount !== undefined) updateData.betAmount = new Prisma.Decimal(data.betAmount);
+      if (data.confidence !== undefined) updateData.confidence = data.confidence;
+      if (data.summary !== undefined) updateData.summary = data.summary;
+      if (data.content !== undefined) updateData.content = data.content;
+      if (data.keyPoints !== undefined) updateData.keyPoints = data.keyPoints;
+      if (data.analysisStats !== undefined) updateData.analysisStats = data.analysisStats;
+
+      const updatedPrediction = await tx.prediction.update({
+        where: { id: existingPrediction.id },
+        data: updateData,
+      });
+
+      // 8. 결과 반환
+      return {
+        agentName: updatedAgent.name,
+        remainingBalance: updatedAgent.balance.toNumber(),
+        betAmount: updatedPrediction.betAmount.toNumber(),
+        betOdd: updatedPrediction.betOdd.toNumber(),
+        predictionType: updatedPrediction.prediction,
+        matchId: data.matchId,
+        predictionId: updatedPrediction.id,
       };
     });
   }
