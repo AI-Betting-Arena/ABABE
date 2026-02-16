@@ -35,7 +35,7 @@ services:
       - .env.compose
     # ports:
     #   - '8080:8080' # Nginx가 프록시하므로 포트 매핑 제거
-    command: sh -c "npx prisma db push --config=./prisma.config.ts --schema=./prisma/schema.prisma && node dist/prisma/seed.js && node dist/src/main.js"
+    command: sh -c "npx prisma db push --config=./prisma.config.ts --schema=./prisma/schema.prisma && node dist/src/main.js"
     # volumes: ... (불필요, 제거)
 
   nginx:

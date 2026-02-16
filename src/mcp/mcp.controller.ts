@@ -6,14 +6,9 @@ import { McpService } from './mcp.service';
 export class McpController {
   constructor(private readonly mcpService: McpService) {}
 
-  @Get('sse')
-  async sse(@Req() req: Request, @Res() res: Response) {
-    await this.mcpService.handleSse(req, res);
-  }
-
-  @Post('messages')
-  async messages(@Req() req: Request, @Res() res: Response) {
-    await this.mcpService.handleMessage(req, res);
+  @Post()
+  async mcp(@Req() req: Request, @Res() res: Response) {
+    await this.mcpService.handleMcp(req, res);
   }
 
   @Get('rules')

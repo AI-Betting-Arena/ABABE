@@ -1,6 +1,6 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { Injectable } from '@nestjs/common';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -15,30 +15,14 @@ import { DateProvider } from 'src/common/providers/date.provider';
 import { randomUUID } from 'crypto';
 
 /**
- * [PRINCIPLE: SRP] MCP Service - Per-Connection Server Management
+ * [PRINCIPLE: SRP] MCP Service - Stateless Streamable HTTP Transport
  *
- * Previous issue: Single Server instance caused "Already connected" error
- * when multiple clients attempted SSE connections.
- *
- * Solution: Each SSE connection gets its own Server instance stored in a Map.
- * Server.connect() enforces 1:1 binding between Server and Transport.
- *
- * Why this works: MCP SDK documentation shows Server instances should be
- * created per-request for stateless operation, or Transport should be reused
- * for stateful sessions. SSE creates new Transport per connection, so we
- * create new Server per connection.
+ * Migrated from deprecated SSE transport to official Streamable HTTP transport.
+ * Each request creates its own McpServer instance for stateless operation.
+ * No session tracking needed - each request is independent.
  */
 @Injectable()
-export class McpService implements OnModuleDestroy {
-  /**
-   * Map of active connections: connectionId -> { server, transport }
-   * Each SSE connection maintains its own Server instance to avoid
-   * "Already connected to a transport" errors.
-   */
-  private readonly connections = new Map<
-    string,
-    { server: Server; transport: SSEServerTransport }
-  >();
+export class McpService {
 
   constructor(
     private readonly matchesService: MatchesService,
@@ -46,150 +30,45 @@ export class McpService implements OnModuleDestroy {
     private readonly settlementService: SettlementService,
     private readonly dateProvider: DateProvider,
   ) {
-    // No longer creating a single shared Server instance
-    // Each connection will create its own via createServerInstance()
+    // Stateless service - no initialization needed
   }
 
   /**
-   * [PRINCIPLE: SRP] Handle SSE connection - creates isolated Server per client
-   *
-   * Each SSE connection receives:
-   * 1. Unique connectionId for tracking
-   * 2. Dedicated Server instance (avoids "Already connected" error)
-   * 3. SSEServerTransport bound to this Server
-   * 4. Cleanup handler on connection close
+   * Handle Streamable HTTP MCP request
+   * Creates stateless McpServer instance per request
    */
-  async handleSse(req: Request, res: Response): Promise<void> {
-    const connectionId = randomUUID();
+  async handleMcp(req: Request, res: Response): Promise<void> {
+    const connectionId = randomUUID(); // For logging only
 
-    // 디버깅: 요청 정보 로깅
-    console.log(`[SSE ${connectionId}] Connection request`);
-    console.log(`[SSE ${connectionId}] IP: ${req.ip}`);
-    console.log(`[SSE ${connectionId}] User-Agent: ${req.headers['user-agent']}`);
-    console.log(`[SSE ${connectionId}] Origin: ${req.headers.origin || 'none'}`);
-    console.log(`[SSE ${connectionId}] Host: ${req.headers.host}`);
+    console.log(`[MCP ${connectionId}] Request from ${req.ip}`);
+    console.log(`[MCP ${connectionId}] User-Agent: ${req.headers['user-agent']}`);
 
     try {
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      res.setHeader('X-Accel-Buffering', 'no'); // Nginx buffering 비활성화
-
-      console.log(`[SSE ${connectionId}] Headers set`);
-
-      // Create a new Server instance for this connection
+      // Create fresh server instance (stateless)
       const server = this.createServerInstance();
-      console.log(`[SSE ${connectionId}] Server instance created`);
 
-      const transport = new SSEServerTransport('/api/v1/mcp/messages', res);
-      console.log(`[SSE ${connectionId}] Transport created`);
-
-      // Connect Server to Transport (1:1 binding)
-      await server.connect(transport);
-      console.log(`[SSE ${connectionId}] Server connected to transport`);
-
-      // Store connection for tracking and cleanup
-      this.connections.set(connectionId, { server, transport });
-      console.log(
-        `[SSE ${connectionId}] Connection established (total: ${this.connections.size})`,
-      );
-
-      // Cleanup on client disconnect
-      req.on('close', async () => {
-        console.log(`[SSE ${connectionId}] Connection closed by client`);
-        const connection = this.connections.get(connectionId);
-
-        if (connection) {
-          try {
-            // Close Server (also closes Transport)
-            await connection.server.close();
-          } catch (error) {
-            console.error(
-              `[SSE ${connectionId}] Error closing connection:`,
-              error.message,
-            );
-          } finally {
-            // Always remove from map
-            this.connections.delete(connectionId);
-            console.log(
-              `[SSE ${connectionId}] Cleaned up (remaining: ${this.connections.size})`,
-            );
-          }
-        }
+      // Create transport in stateless mode
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
       });
-    } catch (error) {
-      console.error(`[SSE ${connectionId}] Error establishing connection:`, error);
-      console.error(`[SSE ${connectionId}] Error message:`, error.message);
-      console.error(`[SSE ${connectionId}] Error stack:`, error.stack);
 
-      // 에러 발생 시 클라이언트에 응답 (헤더가 아직 안 보내졌으면)
+      // Connect and handle request
+      await server.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+
+      console.log(`[MCP ${connectionId}] Request handled successfully`);
+    } catch (error) {
+      console.error(`[MCP ${connectionId}] Error:`, error.message);
+      console.error(`[MCP ${connectionId}] Stack:`, error.stack);
+
       if (!res.headersSent) {
         res.status(500).json({
-          error: 'Failed to establish SSE connection',
+          error: 'MCP request failed',
           details: error.message,
-          connectionId: connectionId
+          connectionId,
         });
       }
     }
-  }
-
-  /**
-   * Handle POST /messages endpoint
-   *
-   * Routes message to the first active SSE connection's transport.
-   * In typical usage, there's one active SSE connection per client session.
-   */
-  async handleMessage(req: Request, res: Response): Promise<void> {
-    console.log(`[POST /messages] Received message from ${req.ip}`);
-    console.log(`[POST /messages] Session ID: ${req.query.sessionId || req.body?.sessionId || 'none'}`);
-    console.log(`[POST /messages] Active connections: ${this.connections.size}`);
-
-    // Get the first active connection
-    const connection = Array.from(this.connections.values())[0];
-
-    if (connection?.transport) {
-      console.log(`[POST /messages] Routing to active transport`);
-      try {
-        await connection.transport.handlePostMessage(req, res);
-        console.log(`[POST /messages] Message handled successfully`);
-      } catch (error) {
-        console.error(`[POST /messages] Error handling message:`, error);
-        throw error;
-      }
-    } else {
-      console.warn(`[POST /messages] No active connection available`);
-      res.status(503).json({
-        error:
-          'No active MCP connection. Please establish SSE connection first.',
-      });
-    }
-  }
-
-  /**
-   * Cleanup all active connections on module shutdown
-   */
-  async onModuleDestroy() {
-    console.log(
-      `McpService shutting down: closing ${this.connections.size} active connections`,
-    );
-
-    const closePromises = Array.from(this.connections.entries()).map(
-      async ([connectionId, connection]) => {
-        try {
-          await connection.server.close();
-          console.log(`Closed connection: ${connectionId}`);
-        } catch (error) {
-          console.error(
-            `Error closing connection ${connectionId}:`,
-            error.message,
-          );
-        }
-      },
-    );
-
-    await Promise.all(closePromises);
-    this.connections.clear();
-    console.log('McpService shutdown complete');
   }
 
   settleLastWeekMatches(): Promise<string> {
@@ -208,14 +87,13 @@ export class McpService implements OnModuleDestroy {
   }
 
   /**
-   * [PRINCIPLE: DRY] Create a new Server instance with all tool handlers
+   * [PRINCIPLE: DRY] Create a new McpServer instance with all tool handlers
    *
-   * Each connection needs its own Server instance, but they all share
-   * the same tool definitions. This method centralizes Server creation
-   * to avoid code duplication.
+   * Each request needs its own McpServer instance for stateless operation.
+   * All instances share the same tool definitions.
    */
-  private createServerInstance(): Server {
-    const server = new Server(
+  private createServerInstance(): McpServer {
+    const server = new McpServer(
       {
         name: 'ababe-arena-mcp',
         version: '1.0.0',
@@ -232,12 +110,12 @@ export class McpService implements OnModuleDestroy {
   }
 
   /**
-   * Setup tool handlers for a Server instance
+   * Setup tool handlers for a McpServer instance
    *
-   * @param server - The Server instance to configure
+   * @param server - The McpServer instance to configure
    */
-  private setupToolHandlers(server: Server) {
-    server.setRequestHandler(ListToolsRequestSchema, async () => {
+  private setupToolHandlers(server: McpServer) {
+    server.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: [
           {
@@ -336,7 +214,7 @@ export class McpService implements OnModuleDestroy {
       };
     });
 
-    server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    server.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
 
       if (name === 'get_weekly_matches') {
